@@ -7,11 +7,9 @@ from datetime import datetime, timedelta
 import os
 import gdown
 
-
-
 st.set_page_config(layout="wide")
 
-# Veriyi indir
+# --- Veriyi indir ---
 @st.cache_data
 def load_data():
     url_id = "1ZptN78nnE4i-YTDvcy0DiUtTQ5SWDJJ7"
@@ -21,11 +19,11 @@ def load_data():
         gdown.download(url, output, quiet=False)
     return pd.read_pickle(output)
 
-# Fonksiyon: PYŞ bazında fon akımı grafiği
+# --- Fonksiyon: PYŞ bazında fon akımı grafiği ---
 def show_pysh_fund_flows():
     main_df = load_data()
 
-    st.title("📊 Fon Akımları Dashboard")
+    st.markdown("## 📊 Fon Akımları Dashboard")
 
     main_df["Tarih"] = pd.to_datetime(main_df["Tarih"])
     asset_columns = [col for col in main_df.columns if col.endswith("_TL")]
@@ -40,19 +38,28 @@ def show_pysh_fund_flows():
         "1 Yıl": 252
     }
 
-    st.sidebar.header("Filtreler")
-    selected_pysh = st.sidebar.selectbox("PYŞ seçin", pysh_list)
-    selected_range = st.sidebar.selectbox("Zaman aralığı", list(range_dict.keys()))
+    selected_pysh = st.selectbox("PYŞ seçin", pysh_list, key="pysh")
+    selected_range = st.selectbox("Zaman aralığı", list(range_dict.keys()), key="range")
     day_count = range_dict[selected_range]
 
     last_dates = main_df["Tarih"].drop_duplicates().sort_values(ascending=False).head(day_count)
     pysh_df = main_df[(main_df["PYŞ"] == selected_pysh) & (main_df["Tarih"].isin(last_dates))]
+
+    if pysh_df.empty:
+        st.warning("Seçilen kriterlere göre veri bulunamadı.")
+        return
+
     total_flows = pysh_df[asset_columns].sum()
 
     summary_df = pd.DataFrame({
         "Varlık Sınıfı": asset_columns_clean,
         "Toplam Flow (mn)": total_flows.values / 1e6
     }).sort_values(by="Toplam Flow (mn)", ascending=False)
+
+    if summary_df.empty:
+        st.warning("Grafik oluşturmak için yeterli veri yok.")
+        return
+
     total_sum_mn = summary_df["Toplam Flow (mn)"].sum()
 
     fig = px.bar(
@@ -68,8 +75,6 @@ def show_pysh_fund_flows():
         xaxis_title="Varlık Sınıfı",
         yaxis_title="Toplam Flow (mn)",
         yaxis_tickformat=",.0f",
-        xaxis=dict(tickfont=dict(size=13, family="Segoe UI Semibold", color="black")),
-        yaxis=dict(tickfont=dict(size=13, family="Segoe UI Semibold", color="black")),
         font=dict(size=13, family="Segoe UI", color="black"),
         plot_bgcolor="#f7f7f7",
         paper_bgcolor="#ffffff"
@@ -77,20 +82,13 @@ def show_pysh_fund_flows():
 
     st.plotly_chart(fig, use_container_width=True)
 
-
-from datetime import datetime, timedelta
-import io
-import requests
-
-# Fonksiyon: Takasbank verisiyle varlık sınıfı değişimi grafiği
+# --- Fonksiyon: Takasbank verisiyle varlık sınıfı değişimi grafiği ---
 def show_takasbank_chart():
-    st.title("📊 Varlık Sınıfı Değişimi – Takasbank Verisi")
+    st.markdown("## 📊 Varlık Sınıfı Değişimi – Takasbank Verisi")
 
-    # Tarih seçimi
     selected_date = st.date_input("Tarih seçin", datetime.today())
     t_date = datetime.combine(selected_date, datetime.min.time())
 
-    # Ayarlar
     fon_grubu = "F"
     fon_turu = "99999"
     key = "rT4AQ2R2lXyX-Ys9LzTkPbJ8szIKc4w1xwMbqV-1v984zpEau4bixJOrFrmS9sM_0"
@@ -110,16 +108,14 @@ def show_takasbank_chart():
         response = requests.get(url)
         return pd.read_excel(io.BytesIO(response.content))
 
-    # Veri çekme
     try:
         df_t = download_excel(t_date)
         df_t7 = download_excel(t_date - timedelta(days=7))
         df_t28 = download_excel(t_date - timedelta(days=28))
     except Exception as e:
         st.error(f"Veri çekilirken hata oluştu: {e}")
-        st.stop()
+        return
 
-    # Temizleme
     def extract_main(df):
         df = df[df[df.columns[0]].isin(main_items)]
         return df.set_index(df.columns[0])[df.columns[1]]
@@ -158,8 +154,9 @@ def show_takasbank_chart():
         legend_title=""
     )
 
-st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, use_container_width=True)
 
+# --- Uygulama ---
 st.sidebar.title("🧭 Sayfa Menüsü")
 st.markdown("## Fon Akımları Paneli")
 show_pysh_fund_flows()
@@ -168,8 +165,3 @@ st.markdown("---")
 
 st.markdown("## Takasbank Paneli")
 show_takasbank_chart()
-
-if selected_page == "Fon Akımları":
-    show_pysh_fund_flows()
-elif selected_page == "Takasbank Verisi":
-    show_takasbank_chart()
