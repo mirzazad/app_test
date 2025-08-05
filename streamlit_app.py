@@ -169,14 +169,15 @@ def show_takasbank_chart():
         xaxis="x1"
     ))
 
-    fig.add_trace(go.Bar(
-        x=df_pct["Büyüklük (mn TL)"],
+        fig.add_trace(go.Bar(
+        x=df_pct["Haftalık"],
         y=df_pct["Varlık Sınıfı"],
-        name="Büyüklük (mn TL)",
+        name="Haftalık Değişim (bps)",
         orientation="h",
-        marker_color="darkorange",
-        xaxis="x2"
+        marker_color="steelblue",
+        xaxis="x1"
     ))
+
 
     fig.update_layout(
         title=f"📅 {t_date.strftime('%d %B %Y')} – Varlık Sınıfı Değişim & Büyüklük",
@@ -186,6 +187,7 @@ def show_takasbank_chart():
             side="bottom",
             overlaying="x2"
         ),
+        
         xaxis2=dict(
             title="Büyüklük (mn TL)",
             side="top",
