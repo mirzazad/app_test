@@ -134,10 +134,8 @@ def show_takasbank_chart():
     df_pct["Aylık"] = (df_pct["t"] - df_pct["t28"]) * 10000
     df_pct = df_pct.round(1)
     df_pct = df_pct[["Haftalık", "Aylık"]].reset_index().rename(columns={df_pct.index.name: "Varlık Sınıfı"})
-   # Büyüklükleri ayrı bir Seri olarak al
-    buyukluk_serisi = extract_main(df_t).div(1e6).round(1)
 
-    # Büyüklükleri df_pct'e merge ile ekle
+    buyukluk_serisi = extract_main(df_t).div(1e6).round(1)
     df_pct = df_pct.merge(
         buyukluk_serisi.rename("Büyüklük (mn TL)"),
         how="left",
@@ -145,14 +143,10 @@ def show_takasbank_chart():
         right_index=True
     )
 
-
     st.dataframe(df_pct[["Varlık Sınıfı", "Büyüklük (mn TL)", "Haftalık", "Aylık"]])
 
-    # Grafik oluştur (çift yatay eksenli)
-    # Grafik oluştur (çift yatay eksenli)
     fig = go.Figure()
-    
-    # Barlar: Haftalık ve Aylık Değişim
+
     fig.add_trace(go.Bar(
         x=df_pct["Haftalık"],
         y=df_pct["Varlık Sınıfı"],
@@ -160,7 +154,7 @@ def show_takasbank_chart():
         orientation="h",
         marker_color="steelblue"
     ))
-    
+
     fig.add_trace(go.Bar(
         x=df_pct["Aylık"],
         y=df_pct["Varlık Sınıfı"],
@@ -168,8 +162,7 @@ def show_takasbank_chart():
         orientation="h",
         marker_color="lightblue"
     ))
-    
-    # Noktalar: Büyüklük (mn TL) – ayrı eksen (x2)
+
     fig.add_trace(go.Scatter(
         x=df_pct["Büyüklük (mn TL)"],
         y=df_pct["Varlık Sınıfı"],
@@ -180,8 +173,7 @@ def show_takasbank_chart():
         xaxis="x2",
         showlegend=True
     ))
-    
-    # Layout ayarları
+
     fig.update_layout(
         title=f"📅 {t_date.strftime('%d %B %Y')} – Varlık Sınıfı Değişim & Büyüklük",
         barmode="group",
@@ -203,13 +195,8 @@ def show_takasbank_chart():
         paper_bgcolor="#ffffff",
         font=dict(size=13, family="Segoe UI")
     )
-    
-    # Grafiği göster
-    st.plotly_chart(fig, use_container_width=True)
 
-    # BU SATIRI EKLEMEDİĞİN İÇİN GRAFİK GÖZÜKMÜYORDU
-    st.plotly_chart(fig, use_container_width=True)
-
+    st.plotly_chart(fig, use_container_width=True, key="takasbank_chart")
 
 
 # --- Uygulama ---
