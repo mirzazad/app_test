@@ -151,6 +151,7 @@ def show_takasbank_chart():
     # Grafik oluştur (çift yatay eksenli)
     fig = go.Figure()
 
+    # Barlar: Haftalık ve Aylık Değişim
     fig.add_trace(go.Bar(
         x=df_pct["Haftalık"],
         y=df_pct["Varlık Sınıfı"],
@@ -159,7 +160,7 @@ def show_takasbank_chart():
         marker_color="steelblue",
         xaxis="x1"
     ))
-
+    
     fig.add_trace(go.Bar(
         x=df_pct["Aylık"],
         y=df_pct["Varlık Sınıfı"],
@@ -168,17 +169,18 @@ def show_takasbank_chart():
         marker_color="lightblue",
         xaxis="x1"
     ))
-
-        fig.add_trace(go.Bar(
-        x=df_pct["Haftalık"],
+    
+    # Noktalar: Büyüklük
+    fig.add_trace(go.Scatter(
+        x=df_pct["Büyüklük (mn TL)"],
         y=df_pct["Varlık Sınıfı"],
-        name="Haftalık Değişim (bps)",
-        orientation="h",
-        marker_color="steelblue",
-        xaxis="x1"
+        name="Büyüklük (mn TL)",
+        mode="markers",
+        marker=dict(size=10, color="darkorange"),
+        xaxis="x2"
     ))
-
-
+    
+    # Layout ayarları
     fig.update_layout(
         title=f"📅 {t_date.strftime('%d %B %Y')} – Varlık Sınıfı Değişim & Büyüklük",
         barmode="group",
@@ -187,7 +189,6 @@ def show_takasbank_chart():
             side="bottom",
             overlaying="x2"
         ),
-        
         xaxis2=dict(
             title="Büyüklük (mn TL)",
             side="top",
@@ -201,6 +202,7 @@ def show_takasbank_chart():
         paper_bgcolor="#ffffff",
         font=dict(size=13, family="Segoe UI")
     )
+
 
     st.plotly_chart(fig, use_container_width=True)
 
