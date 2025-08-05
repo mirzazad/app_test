@@ -158,16 +158,16 @@ def show_takasbank_chart():
         legend_title=""
     )
 
-    st.plotly_chart(fig, use_container_width=True)
+st.plotly_chart(fig, use_container_width=True)
 
-    st.sidebar.title("🧭 Sayfa Menüsü")
-    st.markdown("## Fon Akımları Paneli")
-    show_pysh_fund_flows()
+st.sidebar.title("🧭 Sayfa Menüsü")
+st.markdown("## Fon Akımları Paneli")
+show_pysh_fund_flows()
 
-    st.markdown("---")
+st.markdown("---")
 
-    st.markdown("## Takasbank Paneli")
-    show_takasbank_chart()
+st.markdown("## Takasbank Paneli")
+show_takasbank_chart()
 
 if selected_page == "Fon Akımları":
     show_pysh_fund_flows()
