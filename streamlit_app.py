@@ -181,7 +181,7 @@ def show_takasbank_chart():
     ))
     
     # Layout ayarları
-        fig.update_layout(
+    fig.update_layout(
         title=f"📅 {t_date.strftime('%d %B %Y')} – Varlık Sınıfı Değişim & Büyüklük",
         barmode="group",
         xaxis=dict(
