@@ -115,9 +115,9 @@ def show_takasbank_chart():
     except Exception as e:
         st.error(f"Veri çekilirken hata oluştu: {e}")
         return
-
     def extract_main(df):
         df = df[df[df.columns[0]].isin(main_items)]
+        df = df.drop_duplicates(subset=[df.columns[0]])
         return df.set_index(df.columns[0])[df.columns[1]]
 
     df = pd.concat({
