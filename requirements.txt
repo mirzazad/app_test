@@ -3,4 +3,3 @@ pandas
 plotly
 gdown
 openpyxl
-os
