@@ -134,7 +134,17 @@ def show_takasbank_chart():
     df_pct["Aylık"] = (df_pct["t"] - df_pct["t28"]) * 10000
     df_pct = df_pct.round(1)
     df_pct = df_pct[["Haftalık", "Aylık"]].reset_index().rename(columns={df_pct.index.name: "Varlık Sınıfı"})
-    df_pct["Büyüklük (mn TL)"] = extract_main(df_t).div(1e6).round(1).values
+   # Büyüklükleri ayrı bir Seri olarak al
+    buyukluk_serisi = extract_main(df_t).div(1e6).round(1)
+
+    # Büyüklükleri df_pct'e merge ile ekle
+    df_pct = df_pct.merge(
+        buyukluk_serisi.rename("Büyüklük (mn TL)"),
+        how="left",
+        left_on="Varlık Sınıfı",
+        right_index=True
+    )
+
 
     st.dataframe(df_pct[["Varlık Sınıfı", "Büyüklük (mn TL)", "Haftalık", "Aylık"]])
 
