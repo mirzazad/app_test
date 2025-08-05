@@ -150,15 +150,14 @@ def show_takasbank_chart():
 
     # Grafik oluştur (çift yatay eksenli)
     fig = go.Figure()
-
+    
     # Barlar: Haftalık ve Aylık Değişim
     fig.add_trace(go.Bar(
         x=df_pct["Haftalık"],
         y=df_pct["Varlık Sınıfı"],
         name="Haftalık Değişim (bps)",
         orientation="h",
-        marker_color="steelblue",
-        xaxis="x1"
+        marker_color="steelblue"
     ))
     
     fig.add_trace(go.Bar(
@@ -166,18 +165,19 @@ def show_takasbank_chart():
         y=df_pct["Varlık Sınıfı"],
         name="Aylık Değişim (bps)",
         orientation="h",
-        marker_color="lightblue",
-        xaxis="x1"
+        marker_color="lightblue"
     ))
     
-    # Noktalar: Büyüklük
+    # Noktalar: Büyüklük (tooltip ile)
     fig.add_trace(go.Scatter(
-        x=df_pct["Büyüklük (mn TL)"],
+        x=df_pct["Haftalık"],  # Aynı hizaya oturması için haftalık eksenle aynı x kullanıyoruz
         y=df_pct["Varlık Sınıfı"],
-        name="Büyüklük (mn TL)",
         mode="markers",
-        marker=dict(size=10, color="darkorange"),
-        xaxis="x2"
+        name="Büyüklük (mn TL)",
+        marker=dict(size=12, color="darkorange", symbol="circle"),
+        hovertemplate='<b>%{y}</b><br>Büyüklük: %{customdata:,} mn TL',
+        customdata=df_pct["Büyüklük (mn TL)"],
+        showlegend=True
     ))
     
     # Layout ayarları
@@ -186,14 +186,7 @@ def show_takasbank_chart():
         barmode="group",
         xaxis=dict(
             title="Değişim (bps)",
-            side="bottom",
-            overlaying="x2"
-        ),
-        xaxis2=dict(
-            title="Büyüklük (mn TL)",
-            side="top",
-            position=1,
-            anchor="y"
+            side="bottom"
         ),
         yaxis=dict(title="Varlık Sınıfı"),
         legend=dict(orientation="h", y=-0.2),
@@ -202,9 +195,6 @@ def show_takasbank_chart():
         paper_bgcolor="#ffffff",
         font=dict(size=13, family="Segoe UI")
     )
-
-
-    st.plotly_chart(fig, use_container_width=True)
 
 
 # --- Uygulama ---
