@@ -6,6 +6,7 @@ import io
 from datetime import datetime, timedelta
 import os
 import gdown
+import plotly.graph_objects as go
 
 st.set_page_config(layout="wide")
 
@@ -132,29 +133,73 @@ def show_takasbank_chart():
     df_pct["Aylık"] = (df_pct["t"] - df_pct["t28"]) * 10000
     df_pct = df_pct.round(1)
     df_pct = df_pct[["Haftalık", "Aylık"]].reset_index().rename(columns={df_pct.index.name: "Varlık Sınıfı"})
+    # Ek: Büyüklük sütunu ekle
+    df_pct["Büyüklük (mn TL)"] = extract_main(df_t).div(1e6).round(1).values
 
-    fig = px.bar(
-        df_pct.melt(id_vars="Varlık Sınıfı", value_vars=["Haftalık", "Aylık"]),
-        x="value",
-        y="Varlık Sınıfı",
-        color="variable",
-        orientation="h",
-        labels={"value": "Değişim (bps)", "variable": "Dönem"},
-        title=f"📅 {t_date.strftime('%d %B %Y')} – Haftalık & Aylık Varlık Sınıfı Değişimi (bps)"
-    )
+    # Büyüklük tablosu göster
+    st.dataframe(df_pct[["Varlık Sınıfı", "Büyüklük (mn TL)", "Haftalık", "Aylık"]])
 
-    fig.update_layout(
-        barmode="group",
-        xaxis_tickformat=",d",
-        xaxis_title="Değişim (bps)",
-        yaxis_title="",
-        plot_bgcolor="#f7f7f7",
-        paper_bgcolor="#ffffff",
-        font=dict(size=13, family="Segoe UI", color="black"),
-        legend_title=""
-    )
+# Büyüklük sütununu ekle
+df_pct["Büyüklük (mn TL)"] = extract_main(df_t).div(1e6).round(1).values
 
-    st.plotly_chart(fig, use_container_width=True)
+# Tabloyu göster
+st.dataframe(df_pct[["Varlık Sınıfı", "Büyüklük (mn TL)", "Haftalık", "Aylık"]])
+
+# Grafik oluştur (çift yatay eksenli)
+fig = go.Figure()
+
+fig.add_trace(go.Bar(
+    x=df_pct["Haftalık"],
+    y=df_pct["Varlık Sınıfı"],
+    name="Haftalık Değişim (bps)",
+    orientation="h",
+    marker_color="steelblue",
+    xaxis="x1"
+))
+
+fig.add_trace(go.Bar(
+    x=df_pct["Aylık"],
+    y=df_pct["Varlık Sınıfı"],
+    name="Aylık Değişim (bps)",
+    orientation="h",
+    marker_color="lightblue",
+    xaxis="x1"
+))
+
+fig.add_trace(go.Bar(
+    x=df_pct["Büyüklük (mn TL)"],
+    y=df_pct["Varlık Sınıfı"],
+    name="Büyüklük (mn TL)",
+    orientation="h",
+    marker_color="darkorange",
+    xaxis="x2"
+))
+
+# Düzenleme
+fig.update_layout(
+    title=f"📅 {t_date.strftime('%d %B %Y')} – Varlık Sınıfı Değişim & Büyüklük",
+    barmode="group",
+    xaxis=dict(
+        title="Değişim (bps)",
+        side="bottom",
+        overlaying="x2"
+    ),
+    xaxis2=dict(
+        title="Büyüklük (mn TL)",
+        side="top",
+        position=1,
+        anchor="y"
+    ),
+    yaxis=dict(title="Varlık Sınıfı"),
+    legend=dict(orientation="h", y=-0.2),
+    height=700,
+    plot_bgcolor="#f7f7f7",
+    paper_bgcolor="#ffffff",
+    font=dict(size=13, family="Segoe UI")
+)
+
+st.plotly_chart(fig, use_container_width=True)
+
 
 # --- Uygulama ---
 st.sidebar.title("🧭 Sayfa Menüsü")
