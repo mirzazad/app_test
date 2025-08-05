@@ -181,7 +181,7 @@ def show_takasbank_chart():
     ))
     
     # Layout ayarları
-    fig.update_layout(
+        fig.update_layout(
         title=f"📅 {t_date.strftime('%d %B %Y')} – Varlık Sınıfı Değişim & Büyüklük",
         barmode="group",
         xaxis=dict(
@@ -195,6 +195,10 @@ def show_takasbank_chart():
         paper_bgcolor="#ffffff",
         font=dict(size=13, family="Segoe UI")
     )
+
+    # BU SATIRI EKLEMEDİĞİN İÇİN GRAFİK GÖZÜKMÜYORDU
+    st.plotly_chart(fig, use_container_width=True)
+
 
 
 # --- Uygulama ---
