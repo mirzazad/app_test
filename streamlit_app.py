@@ -91,6 +91,9 @@ def show_pysh_fund_flows():
 # -----------------------------
 # 📊 TAKASBANK PANELİ
 # -----------------------------
+# -----------------------------
+# 📊 TAKASBANK PANELİ
+# -----------------------------
 def show_takasbank_chart():
     st.markdown("## 📊 Varlık Sınıfı Değişimi – Takasbank Verisi")
 
@@ -109,6 +112,18 @@ def show_takasbank_chart():
         "Diğer", "TOPLAM"
     ]
 
+    # ✅ Fonksiyon önceden tanımlı olmalı
+    def extract_main(df):
+        if df.empty:
+            return pd.Series(dtype=float)
+        try:
+            df = df[df[df.columns[0]].isin(main_items)]
+            df = df.drop_duplicates(subset=[df.columns[0]])
+            return df.set_index(df.columns[0])[df.columns[1]]
+        except Exception as e:
+            st.warning(f"extract_main hatası: {e}")
+            return pd.Series(dtype=float)
+
     @st.cache_data(show_spinner=False)
     def download_excel(date: datetime):
         date_str = date.strftime("%Y%m%d")
@@ -124,21 +139,17 @@ def show_takasbank_chart():
         st.error(f"Veri çekilirken hata oluştu: {e}")
         return
 
-    def extract_main(df):
-        df = df[df[df.columns[0]].isin(main_items)]
-        df = df.drop_duplicates(subset=[df.columns[0]])
-        return df.set_index(df.columns[0])[df.columns[1]]
+    df = pd.concat({
+        "t": extract_main(df_t),
+        "t7": extract_main(df_t7),
+        "t28": extract_main(df_t28)
+    }, axis=1)
 
-    try:
-        df_t = download_excel(t_date)
-        df_t7 = download_excel(t_date - timedelta(days=7))
-        df_t28 = download_excel(t_date - timedelta(days=28))
-    except Exception as e:
-        st.error(f"Veri çekilirken hata oluştu: {e}")
+    if df.empty:
+        st.warning("Seçilen tarihlere ait geçerli veri bulunamadı.")
         return
 
-
-    df = df.drop("TOPLAM")
+    df = df.drop("TOPLAM", errors="ignore")
     df_pct = df.div(df.sum(axis=0), axis=1)
     df_pct["Haftalık"] = (df_pct["t"] - df_pct["t7"]) * 10000
     df_pct["Aylık"] = (df_pct["t"] - df_pct["t28"]) * 10000
@@ -178,7 +189,7 @@ def show_takasbank_chart():
         mode="markers+text",
         name="Büyüklük (mlr TL)",
         marker=dict(size=10, color="darkorange", symbol="circle"),
-        text=[f"{x:.1f}" for x in df_pct["Büyüklük (mlr TL)"]],
+        text=[f"{x:.1f}" if pd.notnull(x) else "" for x in df_pct["Büyüklük (mlr TL)"]],
         textposition="middle right",
         xaxis="x2",
         showlegend=True
@@ -203,6 +214,7 @@ def show_takasbank_chart():
     )
 
     st.plotly_chart(fig, use_container_width=True)
+
 
 
 # -----------------------------
