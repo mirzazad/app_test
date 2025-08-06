@@ -137,13 +137,15 @@ def show_takasbank_chart():
 
     buyukluk_serisi = extract_main(df_t).div(1e9).round(1)
 
+    # DİKKAT: doğru isim
     df_pct = df_pct.merge(
         buyukluk_serisi.rename("Büyüklük (mlr TL)"),
         how="left",
         left_on="Varlık Sınıfı",
         right_index=True
     )
-
+    st.dataframe(df_pct[["Varlık Sınıfı", "Büyüklük (mlr TL)", "Haftalık", "Aylık"]])
+    
     fig = go.Figure()
 
     fig.add_trace(go.Bar(
@@ -163,15 +165,16 @@ def show_takasbank_chart():
     ))
 
     fig.add_trace(go.Scatter(
-        x=df_pct["Büyüklük (mlr TL)"],
-        y=df_pct["Varlık Sınıfı"],
-        mode="markers",
-        name="Büyüklük (mlr TL)",
-        marker=dict(size=10, color="darkorange", symbol="circle"),
-        hovertemplate='<b>%{y}</b><br>Büyüklük: %{x:,.1f} mlr TL',
-        xaxis="x2",
-        showlegend=True
+    x=df_pct["Büyüklük (mlr TL)"],
+    y=df_pct["Varlık Sınıfı"],
+    mode="markers",
+    name="Büyüklük (mlr TL)",  # Ayrıca burada 'mn TL' yazıyordu, düzelttim
+    marker=dict(size=10, color="darkorange", symbol="circle"),
+    hovertemplate='<b>%{y}</b><br>Büyüklük: %{x:,.0f} mlr TL',
+    xaxis="x2",
+    showlegend=True
     ))
+
 
     fig.update_layout(
         title=f"📅 {t_date.strftime('%d %B %Y')} – Varlık Sınıfı Değişim & Büyüklük",
@@ -182,12 +185,13 @@ def show_takasbank_chart():
             showgrid=False
         ),
         xaxis2=dict(
-            title="Büyüklük (mlr TL)",
+            title="Büyüklük (mn TL)",
             overlaying="x",
             side="top",
             showgrid=False,
-            tickformat=","
+            tickformat=",",  # 100,000 gibi sayıları açıkça gösterir
         ),
+
         yaxis=dict(title="Varlık Sınıfı"),
         legend=dict(orientation="h", y=-0.2),
         height=700,
@@ -208,3 +212,5 @@ st.markdown("---")
 
 st.markdown("## Takasbank Paneli")
 show_takasbank_chart()
+
+ney?
