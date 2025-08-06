@@ -135,9 +135,9 @@ def show_takasbank_chart():
     df_pct = df_pct.round(1)
     df_pct = df_pct[["Haftalık", "Aylık"]].reset_index().rename(columns={df_pct.index.name: "Varlık Sınıfı"})
 
-    buyukluk_serisi = extract_main(df_t).div(1e6).round(1)
+    buyukluk_serisi = extract_main(df_t).div(1e9).round(1)
     df_pct = df_pct.merge(
-        buyukluk_serisi.rename("Büyüklük (mn TL)"),
+        buyukluk_serisi.rename("Büyüklük (ml TL)"),
         how="left",
         left_on="Varlık Sınıfı",
         right_index=True
