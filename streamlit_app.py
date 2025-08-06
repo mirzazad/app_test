@@ -186,8 +186,10 @@ def show_takasbank_chart():
             title="Büyüklük (mn TL)",
             overlaying="x",
             side="top",
-            showgrid=False
+            showgrid=False,
+            tickformat=",",  # 100,000 gibi sayıları açıkça gösterir
         ),
+
         yaxis=dict(title="Varlık Sınıfı"),
         legend=dict(orientation="h", y=-0.2),
         height=700,
