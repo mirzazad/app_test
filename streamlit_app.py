@@ -1,16 +1,18 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 import requests
 import io
 from datetime import datetime, timedelta
 import os
 import gdown
-import plotly.graph_objects as go
 
 st.set_page_config(layout="wide")
 
-# --- Veriyi indir ---
+# --------------------------
+# 📦 Veriyi indir
+# --------------------------
 @st.cache_data
 def load_data():
     url_id = "1ZptN78nnE4i-YTDvcy0DiUtTQ5SWDJJ7"
@@ -20,10 +22,11 @@ def load_data():
         gdown.download(url, output, quiet=False)
     return pd.read_pickle(output)
 
-# --- Fonksiyon: PYŞ bazında fon akımı grafiği ---
+# --------------------------
+# 📊 Fon Akımı Grafiği (PYŞ Bazlı)
+# --------------------------
 def show_pysh_fund_flows():
     main_df = load_data()
-
     st.markdown("## 📊 Fon Akımları Dashboard")
 
     main_df["Tarih"] = pd.to_datetime(main_df["Tarih"])
@@ -39,8 +42,8 @@ def show_pysh_fund_flows():
         "1 Yıl": 252
     }
 
-    selected_pysh = st.selectbox("PYŞ seçin", pysh_list, key="pysh")
-    selected_range = st.selectbox("Zaman aralığı", list(range_dict.keys()), key="range")
+    selected_pysh = st.selectbox("PYŞ seçin", pysh_list)
+    selected_range = st.selectbox("Zaman aralığı", list(range_dict.keys()))
     day_count = range_dict[selected_range]
 
     last_dates = main_df["Tarih"].drop_duplicates().sort_values(ascending=False).head(day_count)
@@ -56,10 +59,6 @@ def show_pysh_fund_flows():
         "Varlık Sınıfı": asset_columns_clean,
         "Toplam Flow (mn)": total_flows.values / 1e6
     }).sort_values(by="Toplam Flow (mn)", ascending=False)
-
-    if summary_df.empty:
-        st.warning("Grafik oluşturmak için yeterli veri yok.")
-        return
 
     total_sum_mn = summary_df["Toplam Flow (mn)"].sum()
 
@@ -83,7 +82,9 @@ def show_pysh_fund_flows():
 
     st.plotly_chart(fig, use_container_width=True)
 
-# --- Fonksiyon: Takasbank verisiyle varlık sınıfı değişimi grafiği ---
+# --------------------------
+# 📊 Takasbank Paneli
+# --------------------------
 def show_takasbank_chart():
     st.markdown("## 📊 Varlık Sınıfı Değişimi – Takasbank Verisi")
 
@@ -137,15 +138,13 @@ def show_takasbank_chart():
 
     buyukluk_serisi = extract_main(df_t).div(1e9).round(1)
 
-    # DİKKAT: doğru isim
     df_pct = df_pct.merge(
         buyukluk_serisi.rename("Büyüklük (mlr TL)"),
         how="left",
         left_on="Varlık Sınıfı",
         right_index=True
     )
-    st.dataframe(df_pct[["Varlık Sınıfı", "Büyüklük (mlr TL)", "Haftalık", "Aylık"]])
-    
+
     fig = go.Figure()
 
     fig.add_trace(go.Bar(
@@ -165,52 +164,44 @@ def show_takasbank_chart():
     ))
 
     fig.add_trace(go.Scatter(
-    x=df_pct["Büyüklük (mlr TL)"],
-    y=df_pct["Varlık Sınıfı"],
-    mode="markers",
-    name="Büyüklük (mlr TL)",  # Ayrıca burada 'mn TL' yazıyordu, düzelttim
-    marker=dict(size=10, color="darkorange", symbol="circle"),
-    hovertemplate='<b>%{y}</b><br>Büyüklük: %{x:,.0f} mlr TL',
-    xaxis="x2",
-    showlegend=True
+        x=df_pct["Büyüklük (mlr TL)"],
+        y=df_pct["Varlık Sınıfı"],
+        mode="markers+text",
+        name="Büyüklük",
+        marker=dict(size=10, color="darkorange", symbol="circle"),
+        text=[f"{x:.1f}" for x in df_pct["Büyüklük (mlr TL)"]],
+        textposition="middle right",
+        xaxis="x2",
+        showlegend=True
     ))
-
 
     fig.update_layout(
         title=f"📅 {t_date.strftime('%d %B %Y')} – Varlık Sınıfı Değişim & Büyüklük",
         barmode="group",
-        xaxis=dict(
-            title="Değişim (bps)",
-            side="bottom",
-            showgrid=False
-        ),
+        height=700,
+        xaxis=dict(title="Değişim (bps)", side="bottom"),
         xaxis2=dict(
-            title="Büyüklük (mn TL)",
+            title="Büyüklük (mlr TL)",
             overlaying="x",
             side="top",
-            showgrid=False,
-            tickformat=",",  # 100,000 gibi sayıları açıkça gösterir
+            tickformat=","
         ),
-
         yaxis=dict(title="Varlık Sınıfı"),
         legend=dict(orientation="h", y=-0.2),
-        height=700,
         plot_bgcolor="#f7f7f7",
         paper_bgcolor="#ffffff",
         font=dict(size=13, family="Segoe UI")
     )
 
-    st.plotly_chart(fig, use_container_width=True, key="takasbank_chart")
+    st.plotly_chart(fig, use_container_width=True)
 
-
-# --- Uygulama ---
-st.sidebar.title("🧭 Sayfa Menüsü")
-st.markdown("## Fon Akımları Paneli")
+# --------------------------
+# 🚀 Uygulama Başlat
+# --------------------------
+st.sidebar.title("🧭 Panel Menü")
+st.markdown("## Fon Akımları Paneli (PYŞ Bazlı)")
 show_pysh_fund_flows()
 
 st.markdown("---")
-
-st.markdown("## Takasbank Paneli")
+st.markdown("## Takasbank Paneli (Varlık Sınıfı Bazlı)")
 show_takasbank_chart()
-
-ney?
