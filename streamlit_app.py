@@ -1,3 +1,6 @@
+# -----------------------------
+# 📦 IMPORTLAR
+# -----------------------------
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -10,9 +13,10 @@ import gdown
 
 st.set_page_config(layout="wide")
 
-# --------------------------
-# 📦 Veriyi indir
-# --------------------------
+
+# -----------------------------
+# 📥 GDRIVE VERİ YÜKLEME
+# -----------------------------
 @st.cache_data
 def load_data():
     url_id = "1ZptN78nnE4i-YTDvcy0DiUtTQ5SWDJJ7"
@@ -22,9 +26,10 @@ def load_data():
         gdown.download(url, output, quiet=False)
     return pd.read_pickle(output)
 
-# --------------------------
-# 📊 Fon Akımı Grafiği (PYŞ Bazlı)
-# --------------------------
+
+# -----------------------------
+# 📊 PYŞ BAZLI FON AKIMLARI
+# -----------------------------
 def show_pysh_fund_flows():
     main_df = load_data()
     st.markdown("## 📊 Fon Akımları Dashboard")
@@ -42,8 +47,8 @@ def show_pysh_fund_flows():
         "1 Yıl": 252
     }
 
-    selected_pysh = st.selectbox("PYŞ seçin", pysh_list)
-    selected_range = st.selectbox("Zaman aralığı", list(range_dict.keys()))
+    selected_pysh = st.sidebar.selectbox("PYŞ seçin", pysh_list)
+    selected_range = st.sidebar.selectbox("Zaman aralığı", list(range_dict.keys()))
     day_count = range_dict[selected_range]
 
     last_dates = main_df["Tarih"].drop_duplicates().sort_values(ascending=False).head(day_count)
@@ -82,13 +87,14 @@ def show_pysh_fund_flows():
 
     st.plotly_chart(fig, use_container_width=True)
 
-# --------------------------
-# 📊 Takasbank Paneli
-# --------------------------
+
+# -----------------------------
+# 📊 TAKASBANK PANELİ
+# -----------------------------
 def show_takasbank_chart():
     st.markdown("## 📊 Varlık Sınıfı Değişimi – Takasbank Verisi")
 
-    selected_date = st.date_input("Tarih seçin", datetime.today())
+    selected_date = st.sidebar.date_input("Tarih seçin", datetime.today())
     t_date = datetime.combine(selected_date, datetime.min.time())
 
     fon_grubu = "F"
@@ -167,7 +173,7 @@ def show_takasbank_chart():
         x=df_pct["Büyüklük (mlr TL)"],
         y=df_pct["Varlık Sınıfı"],
         mode="markers+text",
-        name="Büyüklük",
+        name="Büyüklük (mlr TL)",
         marker=dict(size=10, color="darkorange", symbol="circle"),
         text=[f"{x:.1f}" for x in df_pct["Büyüklük (mlr TL)"]],
         textposition="middle right",
@@ -195,13 +201,11 @@ def show_takasbank_chart():
 
     st.plotly_chart(fig, use_container_width=True)
 
-# --------------------------
-# 🚀 Uygulama Başlat
-# --------------------------
-st.sidebar.title("🧭 Panel Menü")
-st.markdown("## Fon Akımları Paneli (PYŞ Bazlı)")
-show_pysh_fund_flows()
 
+# -----------------------------
+# 🚀 UYGULAMA BAŞLAT
+# -----------------------------
+st.sidebar.title("🧭 Panel Menüsü")
+show_pysh_fund_flows()
 st.markdown("---")
-st.markdown("## Takasbank Paneli (Varlık Sınıfı Bazlı)")
 show_takasbank_chart()
