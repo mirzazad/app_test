@@ -144,7 +144,7 @@ def show_takasbank_chart():
         left_on="Varlık Sınıfı",
         right_index=True
     )
-    st.dataframe(df_pct[["Varlık Sınıfı", "Büyüklük (mn TL)", "Haftalık", "Aylık"]])
+    st.dataframe(df_pct[["Varlık Sınıfı", "Büyüklük (mlr TL)", "Haftalık", "Aylık"]])
 
     fig = go.Figure()
 
@@ -165,10 +165,10 @@ def show_takasbank_chart():
     ))
 
     fig.add_trace(go.Scatter(
-        x=df_pct["Büyüklük (mlr TL)"]
+        x=df_pct["Büyüklük (mlr TL)"],
         y=df_pct["Varlık Sınıfı"],
         mode="markers",
-        name="Büyüklük (mn TL)",
+        name="Büyüklük (mlr TL)",  # Ayrıca burada 'mn TL' yazıyordu, düzelttim
         marker=dict(size=10, color="darkorange", symbol="circle"),
         hovertemplate='<b>%{y}</b><br>Büyüklük: %{x:,.0f} mlr TL',
         xaxis="x2",
