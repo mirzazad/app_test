@@ -136,13 +136,14 @@ def show_takasbank_chart():
     df_pct = df_pct[["Haftalık", "Aylık"]].reset_index().rename(columns={df_pct.index.name: "Varlık Sınıfı"})
 
     buyukluk_serisi = extract_main(df_t).div(1e9).round(1)
+
+    # DİKKAT: doğru isim
     df_pct = df_pct.merge(
-        buyukluk_serisi.rename("Büyüklük (ml TL)"),
+        buyukluk_serisi.rename("Büyüklük (mlr TL)"),
         how="left",
         left_on="Varlık Sınıfı",
         right_index=True
     )
-
     st.dataframe(df_pct[["Varlık Sınıfı", "Büyüklük (mn TL)", "Haftalık", "Aylık"]])
 
     fig = go.Figure()
@@ -164,12 +165,12 @@ def show_takasbank_chart():
     ))
 
     fig.add_trace(go.Scatter(
-        x=df_pct["Büyüklük (mn TL)"],
+        x=df_pct["Büyüklük (mlr TL)"]
         y=df_pct["Varlık Sınıfı"],
         mode="markers",
         name="Büyüklük (mn TL)",
         marker=dict(size=10, color="darkorange", symbol="circle"),
-        hovertemplate='<b>%{y}</b><br>Büyüklük: %{x:,.1f} mn TL',
+        hovertemplate='<b>%{y}</b><br>Büyüklük: %{x:,.0f} mlr TL'
         xaxis="x2",
         showlegend=True
     ))
