@@ -170,7 +170,7 @@ def show_takasbank_chart():
         mode="markers",
         name="Büyüklük (mn TL)",
         marker=dict(size=10, color="darkorange", symbol="circle"),
-        hovertemplate='<b>%{y}</b><br>Büyüklük: %{x:,.0f} mlr TL'
+        hovertemplate='<b>%{y}</b><br>Büyüklük: %{x:,.0f} mlr TL',
         xaxis="x2",
         showlegend=True
     ))
