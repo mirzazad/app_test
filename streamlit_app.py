@@ -329,4 +329,9 @@ show_pysh_fund_flows()
 st.markdown("---")
 
 st.markdown("## Takasbank Paneli")
-show_takasbank_chart()
+show_takasbank_chart(t_date)
+
+st.markdown("---")
+
+st.markdown("## Fon Türü Paneli")
+show_fon_turu_chart(t_date)
