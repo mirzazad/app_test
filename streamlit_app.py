@@ -24,6 +24,7 @@ def load_data():
 def show_pysh_fund_flows():
     main_df = load_data()
 
+    
     st.markdown("## 📊 Fon Akımları Dashboard")
 
     main_df["Tarih"] = pd.to_datetime(main_df["Tarih"])
