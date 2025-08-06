@@ -137,14 +137,12 @@ def show_takasbank_chart():
 
     buyukluk_serisi = extract_main(df_t).div(1e9).round(1)
 
-    # DİKKAT: doğru isim
     df_pct = df_pct.merge(
         buyukluk_serisi.rename("Büyüklük (mlr TL)"),
         how="left",
         left_on="Varlık Sınıfı",
         right_index=True
     )
-    st.dataframe(df_pct[["Varlık Sınıfı", "Büyüklük (mlr TL)", "Haftalık", "Aylık"]])
 
     fig = go.Figure()
 
@@ -168,9 +166,9 @@ def show_takasbank_chart():
         x=df_pct["Büyüklük (mlr TL)"],
         y=df_pct["Varlık Sınıfı"],
         mode="markers",
-        name="Büyüklük (mlr TL)",  # Ayrıca burada 'mn TL' yazıyordu, düzelttim
+        name="Büyüklük (mlr TL)",
         marker=dict(size=10, color="darkorange", symbol="circle"),
-        hovertemplate='<b>%{y}</b><br>Büyüklük: %{x:,.0f} mlr TL',
+        hovertemplate='<b>%{y}</b><br>Büyüklük: %{x:,.1f} mlr TL',
         xaxis="x2",
         showlegend=True
     ))
@@ -184,13 +182,12 @@ def show_takasbank_chart():
             showgrid=False
         ),
         xaxis2=dict(
-            title="Büyüklük (mn TL)",
+            title="Büyüklük (mlr TL)",
             overlaying="x",
             side="top",
             showgrid=False,
-            tickformat=",",  # 100,000 gibi sayıları açıkça gösterir
+            tickformat=","
         ),
-
         yaxis=dict(title="Varlık Sınıfı"),
         legend=dict(orientation="h", y=-0.2),
         height=700,
@@ -200,7 +197,6 @@ def show_takasbank_chart():
     )
 
     st.plotly_chart(fig, use_container_width=True, key="takasbank_chart")
-
 
 # --- Uygulama ---
 st.sidebar.title("🧭 Sayfa Menüsü")
