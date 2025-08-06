@@ -7,6 +7,9 @@ from datetime import datetime, timedelta
 import os
 import gdown
 import plotly.graph_objects as go
+import matplotlib.pyplot as plt
+import matplotlib.ticker as mtick
+from io import BytesIO
 
 st.set_page_config(layout="wide")
 
@@ -20,10 +23,9 @@ def load_data():
         gdown.download(url, output, quiet=False)
     return pd.read_pickle(output)
 
-# --- Fonksiyon: PYŞ bazında fon akımı grafiği ---
+# --- PYŞ bazında fon akımı grafiği ---
 def show_pysh_fund_flows():
     main_df = load_data()
-
     st.markdown("## 📊 Fon Akımları Dashboard")
 
     main_df["Tarih"] = pd.to_datetime(main_df["Tarih"])
@@ -51,7 +53,6 @@ def show_pysh_fund_flows():
         return
 
     total_flows = pysh_df[asset_columns].sum()
-
     summary_df = pd.DataFrame({
         "Varlık Sınıfı": asset_columns_clean,
         "Toplam Flow (mn)": total_flows.values / 1e6
@@ -83,7 +84,7 @@ def show_pysh_fund_flows():
 
     st.plotly_chart(fig, use_container_width=True)
 
-# --- Fonksiyon: Takasbank verisiyle varlık sınıfı değişimi grafiği ---
+# --- Takasbank verisiyle varlık sınıfı değişimi grafiği ---
 def show_takasbank_chart():
     st.markdown("## 📊 Varlık Sınıfı Değişimi – Takasbank Verisi")
 
@@ -115,7 +116,7 @@ def show_takasbank_chart():
         df_t28 = download_excel(t_date - timedelta(days=28))
     except Exception as e:
         st.error(f"Veri çekilirken hata oluştu: {e}")
-        return
+        return None
 
     def extract_main(df):
         df = df[df[df.columns[0]].isin(main_items)]
@@ -136,7 +137,6 @@ def show_takasbank_chart():
     df_pct = df_pct[["Haftalık", "Aylık"]].reset_index().rename(columns={df_pct.index.name: "Varlık Sınıfı"})
 
     buyukluk_serisi = extract_main(df_t).div(1e9).round(1)
-
     df_pct = df_pct.merge(
         buyukluk_serisi.rename("Büyüklük (mlr TL)"),
         how="left",
@@ -176,18 +176,8 @@ def show_takasbank_chart():
     fig.update_layout(
         title=f"📅 {t_date.strftime('%d %B %Y')} – Varlık Sınıfı Değişim & Büyüklük",
         barmode="group",
-        xaxis=dict(
-            title="Değişim (bps)",
-            side="bottom",
-            showgrid=False
-        ),
-        xaxis2=dict(
-            title="Büyüklük (mlr TL)",
-            overlaying="x",
-            side="top",
-            showgrid=False,
-            tickformat=","
-        ),
+        xaxis=dict(title="Değişim (bps)", side="bottom", showgrid=False),
+        xaxis2=dict(title="Büyüklük (mlr TL)", overlaying="x", side="top", showgrid=False, tickformat=","),
         yaxis=dict(title="Varlık Sınıfı"),
         legend=dict(orientation="h", y=-0.2),
         height=700,
@@ -197,12 +187,10 @@ def show_takasbank_chart():
     )
 
     st.plotly_chart(fig, use_container_width=True, key="takasbank_chart")
+    return t_date
 
+# --- Fon Türü değişim grafiği ---
 def show_fon_turu_chart(t_date: datetime):
-    import matplotlib.pyplot as plt
-    import matplotlib.ticker as mtick
-    from io import BytesIO
-
     categories_of_interest = [
         "Altın Fonu", "Altın Katılım Fonu", "Borçlanma Araçları Fonu", "Borçlanma Araçları Özel Fon",
         "Değişken Döviz Fon", "Değişken Fon", "Değişken Özel Fon", "Diğer Değişken Fon",
@@ -254,9 +242,8 @@ def show_fon_turu_chart(t_date: datetime):
     t_amount_billion = df_combined.loc[sort_order, "t"] / 1e9
 
     turkish_months = {
-        1: "Ocak", 2: "Şubat", 3: "Mart", 4: "Nisan",
-        5: "Mayıs", 6: "Haziran", 7: "Temmuz", 8: "Ağustos",
-        9: "Eylül", 10: "Ekim", 11: "Kasım", 12: "Aralık"
+        1: "Ocak", 2: "Şubat", 3: "Mart", 4: "Nisan", 5: "Mayıs", 6: "Haziran",
+        7: "Temmuz", 8: "Ağustos", 9: "Eylül", 10: "Ekim", 11: "Kasım", 12: "Aralık"
     }
     t_plus_3 = t_date + timedelta(days=4)
     t_plus_3_str_tr = f"{t_plus_3.day} {turkish_months[t_plus_3.month]} {t_plus_3.year}"
@@ -288,10 +275,7 @@ def show_fon_turu_chart(t_date: datetime):
         ax2.text(value * 1.10, i, label, va='center', fontsize=12, color="#355765",
                  bbox=dict(boxstyle="round,pad=0.1", facecolor="#FFFFFF6F", edgecolor="none"))
 
-    import streamlit as st
     st.pyplot(fig)
-
-
 
 # --- Uygulama ---
 st.sidebar.title("🧭 Sayfa Menüsü")
@@ -301,7 +285,7 @@ show_pysh_fund_flows()
 st.markdown("---")
 
 st.markdown("## Takasbank Paneli")
-show_takasbank_chart()
-
-st.markdown("## Fon Türü Paneli – Takasbank Verisi")
-show_fon_turu_chart(t_date)
+t_date = show_takasbank_chart()
+if t_date:
+    st.markdown("## Fon Türü Paneli – Takasbank Verisi")
+    show_fon_turu_chart(t_date)
