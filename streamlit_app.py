@@ -129,11 +129,14 @@ def show_takasbank_chart():
         df = df.drop_duplicates(subset=[df.columns[0]])
         return df.set_index(df.columns[0])[df.columns[1]]
 
-    df = pd.concat({
-        "t": extract_main(df_t),
-        "t7": extract_main(df_t7),
-        "t28": extract_main(df_t28)
-    }, axis=1)
+    try:
+        df_t = download_excel(t_date)
+        df_t7 = download_excel(t_date - timedelta(days=7))
+        df_t28 = download_excel(t_date - timedelta(days=28))
+    except Exception as e:
+        st.error(f"Veri çekilirken hata oluştu: {e}")
+        return
+
 
     df = df.drop("TOPLAM")
     df_pct = df.div(df.sum(axis=0), axis=1)
