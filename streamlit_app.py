@@ -9,6 +9,9 @@ import gdown
 import plotly.graph_objects as go
 
 st.set_page_config(layout="wide")
+# 🔹 Sidebar: Ortak tarih seçimi
+selected_date = st.sidebar.date_input("Tarih seçin", pd.to_datetime("today"))
+t_date = pd.to_datetime(selected_date)
 
 # --- Veriyi indir ---
 @st.cache_data
@@ -204,6 +207,10 @@ def show_fon_turu_chart(t_date: datetime):
     import matplotlib.ticker as mtick
     from io import BytesIO
 
+    selected_date = st.date_input("Tarih seçin", datetime.today())
+    t_date = datetime.combine(selected_date, datetime.min.time())
+
+
     categories_of_interest = [
         "Altın Fonu", "Altın Katılım Fonu", "Borçlanma Araçları Fonu", "Borçlanma Araçları Özel Fon",
         "Değişken Döviz Fon", "Değişken Fon", "Değişken Özel Fon", "Diğer Değişken Fon",
@@ -303,6 +310,8 @@ st.markdown("---")
 
 st.markdown("## Takasbank Paneli")
 show_takasbank_chart()
+
+show_fon_turu_chart(t_date)
 
 st.markdown("## Fon Türü Paneli – Takasbank Verisi")
 show_fon_turu_chart(t_date)
