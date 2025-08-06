@@ -1,20 +1,27 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 import requests
+import gdown
+import os
 import io
 from datetime import datetime, timedelta
-import os
-import gdown
-import plotly.graph_objects as go
 
 st.set_page_config(layout="wide")
-# 🔹 Sidebar: Ortak tarih seçimi
-selected_date = st.sidebar.date_input("Tarih seçin", pd.to_datetime("today"))
-t_date = pd.to_datetime(selected_date)
 
-# --- Veriyi indir ---
+# --------------------------
+# 📅 Ortak tarih seçimi (sidebar)
+# --------------------------
+t_date = pd.to_datetime(
+    st.sidebar.date_input("Tarih seçin", pd.to_datetime("today"))
+)
+
+# --------------------------
+# 📦 PYŞ bazında fon akımı verisi
+# --------------------------
 @st.cache_data
+
 def load_data():
     url_id = "1ZptN78nnE4i-YTDvcy0DiUtTQ5SWDJJ7"
     url = f"https://drive.google.com/uc?id={url_id}"
@@ -23,11 +30,8 @@ def load_data():
         gdown.download(url, output, quiet=False)
     return pd.read_pickle(output)
 
-# --- Fonksiyon: PYŞ bazında fon akımı grafiği ---
 def show_pysh_fund_flows():
     main_df = load_data()
-
-    
     st.markdown("## 📊 Fon Akımları Dashboard")
 
     main_df["Tarih"] = pd.to_datetime(main_df["Tarih"])
@@ -61,10 +65,6 @@ def show_pysh_fund_flows():
         "Toplam Flow (mn)": total_flows.values / 1e6
     }).sort_values(by="Toplam Flow (mn)", ascending=False)
 
-    if summary_df.empty:
-        st.warning("Grafik oluşturmak için yeterli veri yok.")
-        return
-
     total_sum_mn = summary_df["Toplam Flow (mn)"].sum()
 
     fig = px.bar(
@@ -87,14 +87,13 @@ def show_pysh_fund_flows():
 
     st.plotly_chart(fig, use_container_width=True)
 
-# --- Fonksiyon: Takasbank verisiyle varlık sınıfı değişimi grafiği ---
+# --------------------------
+# 📊 Takasbank - Varlık Sınıfı Paneli
+# --------------------------
 def show_takasbank_chart():
     st.markdown("## 📊 Varlık Sınıfı Değişimi – Takasbank Verisi")
 
-    selected_date = st.date_input("Tarih seçin", datetime.today())
-    t_date = datetime.combine(selected_date, datetime.min.time())
-
-    fon_grubu = "F"
+    fon_grubu = "P"
     fon_turu = "99999"
     key = "rT4AQ2R2lXyX-Ys9LzTkPbJ8szIKc4w1xwMbqV-1v984zpEau4bixJOrFrmS9sM_0"
     main_items = [
@@ -180,18 +179,8 @@ def show_takasbank_chart():
     fig.update_layout(
         title=f"📅 {t_date.strftime('%d %B %Y')} – Varlık Sınıfı Değişim & Büyüklük",
         barmode="group",
-        xaxis=dict(
-            title="Değişim (bps)",
-            side="bottom",
-            showgrid=False
-        ),
-        xaxis2=dict(
-            title="Büyüklük (mlr TL)",
-            overlaying="x",
-            side="top",
-            showgrid=False,
-            tickformat=","
-        ),
+        xaxis=dict(title="Değişim (bps)", side="bottom", showgrid=False),
+        xaxis2=dict(title="Büyüklük (mlr TL)", overlaying="x", side="top", showgrid=False, tickformat=","),
         yaxis=dict(title="Varlık Sınıfı"),
         legend=dict(orientation="h", y=-0.2),
         height=700,
@@ -202,107 +191,9 @@ def show_takasbank_chart():
 
     st.plotly_chart(fig, use_container_width=True, key="takasbank_chart")
 
-def show_fon_turu_chart(t_date: datetime):
-    import matplotlib.pyplot as plt
-    import matplotlib.ticker as mtick
-    from io import BytesIO
-
-    selected_date = st.date_input("Tarih seçin", datetime.today())
-    t_date = datetime.combine(selected_date, datetime.min.time())
-
-
-    categories_of_interest = [
-        "Altın Fonu", "Altın Katılım Fonu", "Borçlanma Araçları Fonu", "Borçlanma Araçları Özel Fon",
-        "Değişken Döviz Fon", "Değişken Fon", "Değişken Özel Fon", "Diğer Değişken Fon",
-        "Endeks Hisse Senedi Fonu", "Eurobond Borçlanma Araçları Fonu", "Fon Sepeti Fonu",
-        "Fon Sepeti Özel Fonu", "Fon Sepeti Serbest Fon", "Hisse Senedi Fonu",
-        "Hisse Senedi Serbest Fon", "Hisse Senedi Serbest Özel Fon", "Karma Fon",
-        "Katılım Döviz Fon", "Katılım Fonu", "Katılım Hisse Senedi Fonu",
-        "Katılım Serbest Döviz Özel Fon", "Katılım Serbest Fon", "Katılım Serbest Özel Fon",
-        "Kısa Vadeli Borçlanma Araçları Fonu", "Kısa Vadeli Katılım Serbest Fon",
-        "Kısa Vadeli Kira Sertifikası Katılım", "Kısa Vadeli Serbest  Fon",
-        "Kira Sertifikası Katılım Fonu", "Orta Vadeli Borçlanma Araçları Fonu",
-        "Özel Sektör Borçlanma Araçları Fonu", "Para Piyasası Fonu", "Para Piyasası Katılım Fonu",
-        "Serbest Döviz Fon", "Serbest Döviz Özel Fon", "Serbest Fon", "Serbest Özel Fon",
-        "Uzun Vadeli Borçlanma Araçları Fonu", "Yabancı Borçlanma Araçları Fonu",
-        "Yabancı Fon Sepeti Fonu", "Yabancı Hisse Senedi Fonu"
-    ]
-
-    key = "rT4AQ2R2lXyX-Ys9LzTkPbJ8szIKc4w1xwMbqV-1v9-LnLjLKETltBqStY7ldLOK0"
-    dates = {
-        "t": t_date,
-        "t7": t_date - timedelta(days=7),
-        "t28": t_date - timedelta(days=28)
-    }
-
-    data = {}
-    for label, date in dates.items():
-        date_str = date.strftime("%Y%m%d")
-        url = f"https://www.takasbank.com.tr/plugins/ExcelExportPortfoyStatistics?reportType=F&type=F&fundType=99999&endDate={date_str}&startDate={date_str}&key={key}&lang=T&language=tr"
-        response = requests.get(url)
-        df = pd.read_excel(BytesIO(response.content))
-        df = df[df[df.columns[0]].isin(categories_of_interest)].set_index(df.columns[0])
-        data[label] = df[df.columns[1]]
-
-    df_combined = pd.concat(data.values(), axis=1)
-    df_combined.columns = data.keys()
-    df_combined.loc["TOPLAM"] = df_combined.sum()
-
-    df_percent = df_combined.drop("TOPLAM").div(df_combined.loc["TOPLAM"], axis=1)
-    df_percent["Haftalık Değ (bps)"] = (df_percent["t"] - df_percent["t7"]) * 10000
-    df_percent["Aylık Değ (bps)"] = (df_percent["t"] - df_percent["t28"]) * 10000
-    df_percent = df_percent.round(1)
-
-    sort_order = df_combined.drop("TOPLAM")["t"].sort_values(ascending=False).index
-    df_percent = df_percent.loc[sort_order]
-    plot_data = df_percent[["Haftalık Değ (bps)", "Aylık Değ (bps)"]].rename(columns={
-        "Haftalık Değ (bps)": "Haftalık Değ",
-        "Aylık Değ (bps)": "Aylık Değ"
-    })
-    t_amount_billion = df_combined.loc[sort_order, "t"] / 1e9
-
-    turkish_months = {
-        1: "Ocak", 2: "Şubat", 3: "Mart", 4: "Nisan",
-        5: "Mayıs", 6: "Haziran", 7: "Temmuz", 8: "Ağustos",
-        9: "Eylül", 10: "Ekim", 11: "Kasım", 12: "Aralık"
-    }
-    t_plus_3 = t_date + timedelta(days=4)
-    t_plus_3_str_tr = f"{t_plus_3.day} {turkish_months[t_plus_3.month]} {t_plus_3.year}"
-
-    fig, ax1 = plt.subplots(figsize=(12, 10))
-    plot_data.plot(kind="barh", ax=ax1, width=0.6, color={
-        "Haftalık Değ": "#162336",
-        "Aylık Değ": "#cc171d"
-    })
-
-    ax1.set_title(f"Fon Türü Bazında Değişim {t_plus_3_str_tr} itibari ile", fontsize=16)
-    ax1.set_xlabel("Değişim (bps)", fontsize=13)
-    ax1.set_ylabel("Fon Türü", fontsize=14)
-    ax1.grid(axis="x", linestyle="--", alpha=0.6)
-    ax1.legend(loc="center right")
-    ax1.xaxis.set_major_formatter(mtick.FormatStrFormatter('%.0f'))
-    ax1.invert_yaxis()
-
-    ax2 = ax1.twiny()
-    ax2.scatter(t_amount_billion.values, range(len(t_amount_billion)), color="royalblue", marker="o", label="MLR TL")
-    ax2.set_xlabel("Büyüklük (Milyar TL)")
-    ax2.set_xlim(0, t_amount_billion.max() * 1.3)
-    ax2.set_yticks(range(len(t_amount_billion)))
-    ax2.set_yticklabels(df_percent.index.tolist())
-    ax2.legend(loc="upper left")
-
-    for i, value in enumerate(t_amount_billion.values):
-        label = f"{int(round(value)):,}".replace(",", ".")
-        ax2.text(value * 1.10, i, label, va='center', fontsize=12, color="#355765",
-                 bbox=dict(boxstyle="round,pad=0.1", facecolor="#FFFFFF6F", edgecolor="none"))
-
-    import streamlit as st
-    st.pyplot(fig)
-
-
-
-# --- Uygulama ---
-st.sidebar.title("🧭 Sayfa Menüsü")
+# --------------------------
+# ⛳ Uygulama Gövdesi
+# --------------------------
 st.markdown("## Fon Akımları Paneli")
 show_pysh_fund_flows()
 
@@ -310,8 +201,3 @@ st.markdown("---")
 
 st.markdown("## Takasbank Paneli")
 show_takasbank_chart()
-
-show_fon_turu_chart(t_date)
-
-st.markdown("## Fon Türü Paneli – Takasbank Verisi")
-show_fon_turu_chart(t_date)
