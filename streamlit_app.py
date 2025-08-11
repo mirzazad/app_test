@@ -21,15 +21,6 @@ def load_data():
 
 main_df = load_data()
 
-file_id = '1e3OE8r7ZuYe5vvOKPR9_TjuMNyDdLx2r'  # Google Drive dosyasının ID'si
-url = f"https://drive.google.com/uc?id={file_id}"
-
-# Dosyayı indir
-output = 'fund_infox.xlsx'
-gdown.download(url, output, quiet=False)
-
-# Excel dosyasını pandas ile oku
-fund_info = pd.read_excel(output)
 
 # --------------------------
 # 🔍 Filtreleme ayarları
@@ -236,14 +227,16 @@ if main_df is not None:
 else:
     st.warning("Veri bulunamadı. Lütfen pickle dosyasının doğru yolda olduğundan emin olun.")
 
-import gdown
-import pandas as pd
-import streamlit as st
+file_id = '1e3OE8r7ZuYe5vvOKPR9_TjuMNyDdLx2r'  # Google Drive dosyasının ID'si
+url = f"https://drive.google.com/uc?id={file_id}"
 
-# --- Google Drive'dan Excel Dosyasını İndirme --- 
+# Dosyayı indir
+output = 'fund_infox.xlsx'
+gdown.download(url, output, quiet=False)
 
+# Excel dosyasını pandas ile oku
+fund_info = pd.read_excel(output)
 
-import pandas as pd
 
 # --- Fon adı filtreleme fonksiyonları ---
 def filter_exclude_para(df):
