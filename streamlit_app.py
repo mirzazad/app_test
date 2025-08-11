@@ -21,6 +21,16 @@ def load_data():
 
 main_df = load_data()
 
+file_id = '1e3OE8r7ZuYe5vvOKPR9_TjuMNyDdLx2r'  # Google Drive dosyasının ID'si
+url = f"https://drive.google.com/uc?id={file_id}"
+
+# Dosyayı indir
+output = 'fund_infox.xlsx'
+gdown.download(url, output, quiet=False)
+
+# Excel dosyasını pandas ile oku
+fund_info = pd.read_excel(output)
+
 # --------------------------
 # 🔍 Filtreleme ayarları
 # --------------------------
@@ -231,77 +241,69 @@ import pandas as pd
 import streamlit as st
 
 # --- Google Drive'dan Excel Dosyasını İndirme --- 
-file_id = '1e3OE8r7ZuYe5vvOKPR9_TjuMNyDdLx2r'  # Google Drive dosyasının ID'si
-url = f"https://drive.google.com/uc?id={file_id}"
 
-# Dosyayı indir
-output = 'fund_infox.xlsx'
-gdown.download(url, output, quiet=False)
 
-# Excel dosyasını pandas ile oku
-fund_info = pd.read_excel(output)
+import pandas as pd
 
-# --- Veriyi kontrol et ---
-st.write(fund_info.head())  # İlk birkaç satırı göster
-
-# --- Tablolar ve Filtreleme Fonksiyonları ---
-
-def prepare_flow_table(df, fund_info, period_tail, period_name, ascending=False):
-    """Aggregate fund flows and return merged dataframe with labels."""
-    df_sorted = df.sort_values(['Fon Kodu', 'Tarih'])
-    recent = df_sorted.groupby('Fon Kodu').tail(period_tail)
-    aggregated = (
-        recent.groupby('Fon Kodu')['Flow'].sum()
-        .div(1_000_000).round(1).reset_index()
-        .sort_values('Flow', ascending=ascending)
-        .merge(fund_info[['Fon Kodu', 'Fon Adı']], on='Fon Kodu', how='left')
-    )
-    aggregated[period_name] = aggregated['Flow'].apply(lambda x: f"{x:,.0f} M TL")
-    return aggregated
-
-# --- Filtreleme Fonksiyonları ---
+# --- Fon adı filtreleme fonksiyonları ---
 def filter_exclude_para(df):
     return df[~df['Fon Adı'].str.contains('Para', case=False, na=False)]
 
-def filter_exclude_para_serbest(df):
-    return df[~df['Fon Adı'].str.contains('Para|Serbest', case=False, na=False)]
+def filter_exclude_serbest(df):
+    return df[~df['Fon Adı'].str.contains('Serbest', case=False, na=False)]
 
 def filter_yogun_only(df):
     return df[df['Fon Adı'].str.contains('Yoğun', case=False, na=False)]
 
-def filter_hisse_only(df):
-    return df[
-        df['Fon Adı'].str.contains('Yoğun', case=False, na=False) &
-        ~df['Fon Adı'].str.contains('Serbest|Özel|Algoritm', case=False, na=False)
-    ]
+# --- Haftalık ve Aylık giriş ve çıkışları hesaplayan fonksiyon ---
+def prepare_flow_table(df, period_tail, period_name, ascending=False):
+    """Haftalık ve Aylık Giriş/Çıkışları hesapla ve sıralama yap."""
+    df_sorted = df.sort_values(['Fon Kodu', 'Tarih'])
+    recent = df_sorted.groupby('Fon Kodu').tail(period_tail)
+    aggregated = (
+        recent.groupby('Fon Kodu')['Flow'].sum()  # Toplam Giriş/Çıkış
+        .div(1_000_000).round(1)  # Milyon TL cinsinden
+        .reset_index()
+        .sort_values('Flow', ascending=ascending)  # Giriş/Çıkışa göre sıralama
+    )
+    aggregated[period_name] = aggregated['Flow'].apply(lambda x: f"{x:,.0f} M TL")
+    return aggregated
 
-# --- Generate base tables ---
-weekly_inflow = prepare_flow_table(main_df, fund_info, period_tail=5, period_name='Haftalık_Giriş')
-weekly_outflow = prepare_flow_table(main_df, fund_info, period_tail=5, period_name='Haftalık_Çıkış', ascending=True)
-monthly_inflow = prepare_flow_table(main_df, fund_info, period_tail=22, period_name='Aylık_Giriş')
-monthly_outflow = prepare_flow_table(main_df, fund_info, period_tail=22, period_name='Aylık_Çıkış', ascending=True)
+# --- Haftalık ve Aylık giriş/çıkış hesaplamaları ---
+weekly_inflow = prepare_flow_table(main_df, period_tail=5, period_name='Haftalık_Giriş')
+weekly_outflow = prepare_flow_table(main_df, period_tail=5, period_name='Haftalık_Çıkış', ascending=True)
+monthly_inflow = prepare_flow_table(main_df, period_tail=22, period_name='Aylık_Giriş')
+monthly_outflow = prepare_flow_table(main_df, period_tail=22, period_name='Aylık_Çıkış', ascending=True)
 
-# --- Generate filtered tables ---
-result_all = generate_result_table(lambda df: df)
-result_no_para = generate_result_table(filter_exclude_para)
-result_no_para_serbest = generate_result_table(filter_exclude_para_serbest)
-result_yogun_only = generate_result_table(filter_yogun_only)
-result_hisse_only = generate_result_table(filter_hisse_only)
+# --- En Büyük 10 Giriş ve Çıkışı bulma ---
+def get_top_10_greatest_flow(df, period_name):
+    """Fonlar arasında en büyük 10 giriş/çıkışı bul."""
+    return df.nlargest(10, period_name)[['Fon Adı', period_name]]
 
-# --- Tabloyu Streamlit'te Görüntüle ---
-st.write("Tüm Fonlar Tablosu:")
-st.write(result_all)
+# --- Filtrelemeleri ve sıralamaları yapmak ---
+filtered_weekly_inflow = filter_yogun_only(weekly_inflow)  # Yoğun fonlar sadece
+filtered_monthly_inflow = filter_yogun_only(monthly_inflow)
 
-st.write("Para Piyasası Fonları Hariç Tablo:")
-st.write(result_no_para)
+# Haftalık ve Aylık en büyük 10 giriş
+top_10_weekly_inflow = get_top_10_greatest_flow(filtered_weekly_inflow, 'Haftalık_Giriş')
+top_10_monthly_inflow = get_top_10_greatest_flow(filtered_monthly_inflow, 'Aylık_Giriş')
 
-st.write("Para Piyasası ve Serbest Fonlar Hariç Tablo:")
-st.write(result_no_para_serbest)
+# Haftalık ve Aylık en büyük 10 çıkış
+top_10_weekly_outflow = get_top_10_greatest_flow(filtered_weekly_outflow, 'Haftalık_Çıkış')
+top_10_monthly_outflow = get_top_10_greatest_flow(filtered_monthly_outflow, 'Aylık_Çıkış')
 
-st.write("Yoğun Fonlar Tablosu:")
-st.write(result_yogun_only)
+# --- Sonuçları Gösterme (Streamlit'te) ---
+st.write("Haftalık En Büyük 10 Giriş Fonları:")
+st.write(top_10_weekly_inflow)
 
-st.write("Hisse Yoğun Fonlar Tablosu:")
-st.write(result_hisse_only)
+st.write("Aylık En Büyük 10 Giriş Fonları:")
+st.write(top_10_monthly_inflow)
+
+st.write("Haftalık En Büyük 10 Çıkış Fonları:")
+st.write(top_10_weekly_outflow)
+
+st.write("Aylık En Büyük 10 Çıkış Fonları:")
+st.write(top_10_monthly_outflow)
+
 
 
