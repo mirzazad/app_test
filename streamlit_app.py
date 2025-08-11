@@ -144,15 +144,12 @@ def calculate_cumulative(df, start_date):
 
 from datetime import datetime, timedelta
 
-# --------------------------
-# 📊 Bütün PYŞ'ler İçin 12 Aylık Kümülatif Net Giriş Grafik
-# --------------------------
-
-# 12 Aylık Kümülatif Net Giriş hesaplamak için yeni fonksiyon
+# --- 12 Aylık Kümülatif Net Giriş hesaplamak için yeni fonksiyon ---
 def calculate_12_months_cumulative(df):
     """12 aylık kümülatif net giriş hesaplama."""
     df_sorted = df.sort_values('Tarih')
-    df_sorted['Kümülatif Giriş'] = df_sorted['Toplam Flow (mn)'].cumsum()  # 252 iş günü yaklaşık 12 ay
+    df_sorted['Toplam Flow (mn)'] = df_sorted[asset_columns].sum(axis=1)  # Toplam akım
+    df_sorted['Kümülatif Giriş'] = df_sorted['Toplam Flow (mn)'].rolling(window=252).sum()  # 252 iş günü için 12 aylık toplam
     return df_sorted
 
 # Veri filtreleme (seçilen tarih aralığına göre tüm PYŞ'leri gösterecek şekilde)
@@ -162,6 +159,7 @@ df_filtered = main_df[(main_df["Tarih"].dt.date >= start_date) &
 # Veriyi grupla ve 12 aylık kümülatif giriş hesaplama
 if not df_filtered.empty:
     # Varlık sınıfı bazında toplam akım hesaplama
+    asset_columns = [col for col in df_filtered.columns if '_TL' in col]  # sadece sayısal veriler
     df_filtered['Toplam Flow (mn)'] = df_filtered[asset_columns].sum(axis=1)
     
     # 12 aylık kümülatif net giriş hesapla
@@ -180,5 +178,6 @@ if not df_filtered.empty:
     st.plotly_chart(fig3, use_container_width=True)
 else:
     st.warning("Seçilen tarihlerde veri bulunamadı.")
+
 
 
