@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 # --- Veriyi indir ---
 @st.cache_data
 def load_data():
-    url_id = "1ZptN78nnE4i-YTDvcy0DiUtTQ5SWDJJ7"  # kendi dosya ID'ni buraya yaz
+    url_id = "1b6-R6zQXRcOW7OI9ZcWoIcZuAK6OlgT4"  # kendi dosya ID'ni buraya yaz
     url = f"https://drive.google.com/uc?id={url_id}"
     output = "main_df.pkl"
 
