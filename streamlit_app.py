@@ -144,7 +144,7 @@ def calculate_cumulative(df, start_date):
 
 from datetime import datetime, timedelta
 
-
+import plotly.graph_objects as go
 
 # Yüklenen veriyi almak
 main_df = load_data()
