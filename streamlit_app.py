@@ -145,7 +145,7 @@ def calculate_cumulative(df, start_date):
 # --------------------------
 # 📊 Bütün PYŞ'ler İçin 12 Aylık Kümülatif Net Giriş Grafik
 # --------------------------
-
+ybb_start = (datetime.today() - timedelta(days=365)).strftime("%Y-%m-%d")
 # Veri filtreleme (seçilen tarih aralığına göre)
 df_filtered = main_df[(main_df["Tarih"].dt.date >= start_date) & 
                       (main_df["Tarih"].dt.date <= end_date)]
