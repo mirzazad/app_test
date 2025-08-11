@@ -226,11 +226,28 @@ if main_df is not None:
 else:
     st.warning("Veri bulunamadı. Lütfen pickle dosyasının doğru yolda olduğundan emin olun.")
 
-import streamlit as st
+import gdown
 import pandas as pd
+import streamlit as st
 
-# --- Veri Hazırlığı Fonksiyonları ---
+# --- Google Drive'dan Excel Dosyasını İndirme --- 
+file_id = '1e3OE8r7ZuYe5vvOKPR9_TjuMNyDdLx2r'  # Google Drive dosyasının ID'si
+url = f"https://drive.google.com/uc?id={file_id}"
+
+# Dosyayı indir
+output = 'fund_infox.xlsx'
+gdown.download(url, output, quiet=False)
+
+# Excel dosyasını pandas ile oku
+fund_info = pd.read_excel(output)
+
+# --- Veriyi kontrol et ---
+st.write(fund_info.head())  # İlk birkaç satırı göster
+
+# --- Tablolar ve Filtreleme Fonksiyonları ---
+
 def prepare_flow_table(df, fund_info, period_tail, period_name, ascending=False):
+    """Aggregate fund flows and return merged dataframe with labels."""
     df_sorted = df.sort_values(['Fon Kodu', 'Tarih'])
     recent = df_sorted.groupby('Fon Kodu').tail(period_tail)
     aggregated = (
@@ -242,10 +259,7 @@ def prepare_flow_table(df, fund_info, period_tail, period_name, ascending=False)
     aggregated[period_name] = aggregated['Flow'].apply(lambda x: f"{x:,.0f} M TL")
     return aggregated
 
-# Fon bilgilerini oluşturma
-fund_info = main_df[['Fon Kodu', 'Fon Adı']].drop_duplicates().reset_index(drop=True)
-
-# Filter Functions
+# --- Filtreleme Fonksiyonları ---
 def filter_exclude_para(df):
     return df[~df['Fon Adı'].str.contains('Para', case=False, na=False)]
 
@@ -257,44 +271,37 @@ def filter_yogun_only(df):
 
 def filter_hisse_only(df):
     return df[
-        df['Fon Adı'].str.contains('Yoğun', case=False, na=False) & 
+        df['Fon Adı'].str.contains('Yoğun', case=False, na=False) &
         ~df['Fon Adı'].str.contains('Serbest|Özel|Algoritm', case=False, na=False)
     ]
 
-# Tabloları oluşturma
+# --- Generate base tables ---
 weekly_inflow = prepare_flow_table(main_df, fund_info, period_tail=5, period_name='Haftalık_Giriş')
 weekly_outflow = prepare_flow_table(main_df, fund_info, period_tail=5, period_name='Haftalık_Çıkış', ascending=True)
 monthly_inflow = prepare_flow_table(main_df, fund_info, period_tail=22, period_name='Aylık_Giriş')
 monthly_outflow = prepare_flow_table(main_df, fund_info, period_tail=22, period_name='Aylık_Çıkış', ascending=True)
 
-# Sonuç tablosunu oluşturma
-def generate_result_table(filter_func):
-    wi = filter_func(weekly_inflow)[['Fon Adı', 'Haftalık_Giriş']].reset_index(drop=True)
-    wo = filter_func(weekly_outflow)[['Fon Adı', 'Haftalık_Çıkış']].reset_index(drop=True)
-    mi = filter_func(monthly_inflow)[['Fon Adı', 'Aylık_Giriş']].reset_index(drop=True)
-    mo = filter_func(monthly_outflow)[['Fon Adı', 'Aylık_Çıkış']].reset_index(drop=True)
-    table = pd.concat([wi, wo, mi, mo], axis=1).dropna().head(10)
-    return table
+# --- Generate filtered tables ---
+result_all = generate_result_table(lambda df: df)
+result_no_para = generate_result_table(filter_exclude_para)
+result_no_para_serbest = generate_result_table(filter_exclude_para_serbest)
+result_yogun_only = generate_result_table(filter_yogun_only)
+result_hisse_only = generate_result_table(filter_hisse_only)
 
-# Streamlit UI - Filtre Seçimi
-st.sidebar.header("Filtreleme")
-filter_option = st.sidebar.radio("Filtre Seçiniz", ['Tüm Fonlar', 'Para Piyasası Fonları Hariç', 'Para Piyasası ve Serbest Fonlar Hariç', 'Yoğun Fonlar', 'Hisse Yoğun Fonlar'])
+# --- Tabloyu Streamlit'te Görüntüle ---
+st.write("Tüm Fonlar Tablosu:")
+st.write(result_all)
 
-# Seçilen filtreye göre sonuçları göster
-if filter_option == 'Tüm Fonlar':
-    result = generate_result_table(lambda df: df)
-elif filter_option == 'Para Piyasası Fonları Hariç':
-    result = generate_result_table(filter_exclude_para)
-elif filter_option == 'Para Piyasası ve Serbest Fonlar Hariç':
-    result = generate_result_table(filter_exclude_para_serbest)
-elif filter_option == 'Yoğun Fonlar':
-    result = generate_result_table(filter_yogun_only)
-elif filter_option == 'Hisse Yoğun Fonlar':
-    result = generate_result_table(filter_hisse_only)
+st.write("Para Piyasası Fonları Hariç Tablo:")
+st.write(result_no_para)
 
-# Tabloları Streamlit'te gösterme
-st.title(f"Fon Akımları - {filter_option} Filtreli")
-st.dataframe(result)
+st.write("Para Piyasası ve Serbest Fonlar Hariç Tablo:")
+st.write(result_no_para_serbest)
 
+st.write("Yoğun Fonlar Tablosu:")
+st.write(result_yogun_only)
+
+st.write("Hisse Yoğun Fonlar Tablosu:")
+st.write(result_hisse_only)
 
 
