@@ -3,7 +3,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import gdown
 from datetime import datetime, timedelta
-
+import OS
 # --- Veriyi indir ---
 @st.cache_data
 def load_data():
