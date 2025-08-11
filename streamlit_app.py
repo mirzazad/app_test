@@ -144,29 +144,28 @@ def calculate_cumulative(df, start_date):
 
 from datetime import datetime, timedelta
 
-# --- YBB Başlangıç Tarihini Bugünden 365 Gün Önce Olarak Ayarla ---
-ybb_start = (datetime.today() - timedelta(days=365)).strftime("%Y-%m-%d")
-
-# --- Kümülatif Net Giriş Hesaplama (Başlangıç Tarihi Bazında) ---
-def calculate_cumulative(df, start_date):
-    """Başlangıç tarihinden itibaren kümülatif net giriş hesaplama."""
-    df_filtered = df[df['Tarih'] >= pd.to_datetime(start_date)]  # Başlangıç tarihinden sonrası
-    df_filtered['Toplam Flow (mn)'] = df_filtered[asset_columns].sum(axis=1)  # Toplam akımları hesapla
-    df_filtered['Kümülatif Giriş'] = df_filtered['Toplam Flow (mn)'].cumsum()  # Kümülatif birikim hesapla
-    return df_filtered
-
 # --------------------------
 # 📊 Bütün PYŞ'ler İçin 12 Aylık Kümülatif Net Giriş Grafik
 # --------------------------
 
-# Veri filtreleme (seçilen tarih aralığına göre)
+# 12 Aylık Kümülatif Net Giriş hesaplamak için yeni fonksiyon
+def calculate_12_months_cumulative(df):
+    """12 aylık kümülatif net giriş hesaplama."""
+    df_sorted = df.sort_values('Tarih')
+    df_sorted['Kümülatif Giriş'] = df_sorted['Toplam Flow (mn)'].rolling(window=252).sum()  # 252 iş günü yaklaşık 12 ay
+    return df_sorted
+
+# Veri filtreleme (seçilen tarih aralığına göre tüm PYŞ'leri gösterecek şekilde)
 df_filtered = main_df[(main_df["Tarih"].dt.date >= start_date) & 
                       (main_df["Tarih"].dt.date <= end_date)]
 
 # Veriyi grupla ve 12 aylık kümülatif giriş hesaplama
 if not df_filtered.empty:
-    # 12 aylık kümülatif net giriş hesapla (başlangıç tarihinden itibaren)
-    df_filtered = calculate_cumulative(df_filtered, ybb_start)  # Örnek: ybb_start tarihinden itibaren
+    # Varlık sınıfı bazında toplam akım hesaplama
+    df_filtered['Toplam Flow (mn)'] = df_filtered[asset_columns].sum(axis=1)
+    
+    # 12 aylık kümülatif net giriş hesapla
+    df_filtered = calculate_12_months_cumulative(df_filtered)
     
     # Grafik oluştur
     fig3 = px.line(
@@ -181,4 +180,5 @@ if not df_filtered.empty:
     st.plotly_chart(fig3, use_container_width=True)
 else:
     st.warning("Seçilen tarihlerde veri bulunamadı.")
+
 
