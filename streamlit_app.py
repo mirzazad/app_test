@@ -152,7 +152,7 @@ from datetime import datetime, timedelta
 def calculate_12_months_cumulative(df):
     """12 aylık kümülatif net giriş hesaplama."""
     df_sorted = df.sort_values('Tarih')
-    df_sorted['Kümülatif Giriş'] = df_sorted['Toplam Flow (mn)'].rolling(window=252).sum()  # 252 iş günü yaklaşık 12 ay
+    df_sorted['Kümülatif Giriş'] = df_sorted['Toplam Flow (mn)'].cumsum()  # 252 iş günü yaklaşık 12 ay
     return df_sorted
 
 # Veri filtreleme (seçilen tarih aralığına göre tüm PYŞ'leri gösterecek şekilde)
