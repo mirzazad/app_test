@@ -4,18 +4,15 @@ import plotly.express as px
 import gdown
 import os
 from datetime import datetime, timedelta
-import matplotlib.pyplot as plt
-import matplotlib.ticker as mtick
-from io import BytesIO
 
 # --- Veriyi indir ---
 @st.cache_data
 def load_data():
-    url_id = "1b6-R6zQXRcOW7OI9ZcWoIcZuAK6OlgT4"  # kendi dosya ID'ni buraya yaz
+    url_id = "1b6-R6zQXRcOW7OI9ZcWoIcZuAK6OlgT4"
     url = f"https://drive.google.com/uc?id={url_id}"
     output = "main_df.pkl"
 
-    if not os.path.exists(output):  # sadece ilk sefer indirir
+    if not os.path.exists(output):
         gdown.download(url, output, quiet=False)
     return pd.read_pickle(output)
 
@@ -64,7 +61,7 @@ else:
     total_sum_mn = summary_df["Toplam Flow (mn)"].sum()
 
     # --------------------------
-    # 📈 Grafik
+    # 📈 Fon Akımları Grafiği
     # --------------------------
     fig = px.bar(
         summary_df,
@@ -79,12 +76,6 @@ else:
         xaxis_title="Varlık Sınıfı",
         yaxis_title="Toplam Flow (mn)",
         yaxis_tickformat=",.0f",
-        xaxis=dict(
-            tickfont=dict(size=13, family="Segoe UI Semibold", color="black")
-        ),
-        yaxis=dict(
-            tickfont=dict(size=13, family="Segoe UI Semibold", color="black")
-        ),
         font=dict(
             size=13,
             family="Segoe UI",
@@ -94,44 +85,39 @@ else:
         paper_bgcolor="#ffffff"
     )
 
-    # --------------------------
-    # 🖥️ Sayfa Gösterimi
-    # --------------------------
-    st.title("Fon Akımları Dashboard")
     st.plotly_chart(fig, use_container_width=True)
 
 # --------------------------
-# 📊 Kümülatif Net Giriş Grafik
+# 📊 Kümülatif 12 Aylık Net Giriş
 # --------------------------
 
-# Veri filtreleme
+def calculate_12_months_cumulative(df):
+    """12 aylık kümülatif net giriş hesaplama."""
+    df_sorted = df.sort_values('Tarih')
+    df_sorted['Kümülatif Giriş'] = df_sorted['Toplam Flow (mn)'].rolling(window=252).sum()  # 252 iş günü yaklaşık 12 ay
+    return df_sorted
+
+# Veri filtreleme (seçilen PYŞ ve tarih aralığına göre)
 df_filtered = main_df[(main_df["Tarih"].dt.date >= start_date) & 
                       (main_df["Tarih"].dt.date <= end_date) &
                       (main_df["PYŞ"] == selected_pysh)]
 
-# Veriyi grupla ve işle
+# Veriyi grupla ve 12 aylık kümülatif giriş hesaplama
 if not df_filtered.empty:
-    daily = df_filtered.groupby("Tarih")[asset_columns].sum().div(1_000_000).round(2)
-    daily["Toplam"] = daily.sum(axis=1).round(2)
-    daily["Kümülatif Giriş"] = daily["Toplam"].cumsum()
-
+    df_filtered['Toplam Flow (mn)'] = df_filtered[asset_columns].sum(axis=1)
+    
+    # 12 aylık kümülatif net giriş hesapla
+    df_filtered = calculate_12_months_cumulative(df_filtered)
+    
     # Grafik oluştur
-    fig2 = px.line(
-        daily,
-        x=daily.index,
-        y="Kümülatif Giriş",
-        title=f"{selected_pysh} Kümülatif Net Giriş - {start_date} - {end_date}",
-        labels={"value": "Kümülatif Giriş (M TL)", "Tarih": "Tarih"}
+    fig3 = px.line(
+        df_filtered,
+        x='Tarih',
+        y='Kümülatif Giriş',
+        title=f"{selected_pysh} 12 Aylık Kümülatif Net Giriş - {start_date} - {end_date}",
+        labels={"Kümülatif Giriş": "Kümülatif Giriş (M TL)", "Tarih": "Tarih"}
     )
-
-    fig2.update_layout(template="plotly_white", height=500)
-    st.plotly_chart(fig2, use_container_width=True)
-
+    fig3.update_layout(template="plotly_white", height=500)
+    st.plotly_chart(fig3, use_container_width=True)
 else:
     st.warning("Seçilen tarihlerde veri bulunamadı.")
-
-# --------------------------
-# 📊 Fon Türü Değişim Grafik
-# --------------------------
-
-
