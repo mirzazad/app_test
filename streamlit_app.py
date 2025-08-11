@@ -3,6 +3,7 @@ import pandas as pd
 import plotly.express as px
 import gdown
 import os
+from datetime import datetime, timedelta
 
 @st.cache_data
 def load_data():
@@ -31,9 +32,12 @@ pysh_list = sorted(main_df["PYŞ"].dropna().unique())
 st.sidebar.header("Filtreler")
 selected_pysh = st.sidebar.selectbox("PYŞ seçin", pysh_list)
 
-# Custom date range selection
-start_date = st.sidebar.date_input("Başlangıç Tarihi", datetime.today() - timedelta(days=30))
-end_date = st.sidebar.date_input("Bitiş Tarihi", datetime.today())
+# Get available dates from the dataset
+available_dates = main_df["Tarih"].drop_duplicates().sort_values()
+
+# Custom date range selection limited to the available dates in the dataset
+start_date = st.sidebar.date_input("Başlangıç Tarihi", available_dates.min())
+end_date = st.sidebar.date_input("Bitiş Tarihi", available_dates.max())
 
 # --------------------------
 # 📊 Veri Hazırlığı
