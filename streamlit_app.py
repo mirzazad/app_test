@@ -145,7 +145,33 @@ def calculate_cumulative(df, start_date):
 from datetime import datetime, timedelta
 
 
-# --- 12 Aylık Kümülatif Net Giriş Hesaplama Fonksiyonu ---
+
+# Yüklenen veriyi almak
+main_df = load_data()
+
+# --- Varlık Sınıfı Bazında Akımların Hesaplanması ---
+def calculate_flow(df):
+    """Bu fonksiyon, her fon için flow hesaplar."""
+    df['Flow'] = df['Yerli Hisse'] + df['TL Sabit Getirili'] + df['Döviz Sabit Getirili']  # Örnek hesaplama
+    return df
+
+# --- sum_per_date Hesaplama Fonksiyonu ---
+def calculate_sum_per_date(df):
+    """sum_per_date hesaplama"""
+    # Varlık sınıfı bazında akımları hesapla ve sum_per_date oluştur
+    columns_to_calculate = ['Yerli Hisse', 'TL Sabit Getirili', 'Döviz Sabit Getirili', 'Kıymetli Madenler', 
+                            'Yabancı Hisse/BYF', 'TL Yatırım Fon/BYF', 'Teminat', 'Diğer', 'Para Piyasası']
+    
+    for col in columns_to_calculate:
+        df[col + '_TL'] = (df[col] / 100) * df['Flow']
+    
+    tl_columns = [col + '_TL' for col in columns_to_calculate]
+    sum_per_date = df.groupby('Tarih')[tl_columns].sum()
+    sum_per_date.columns = [col.replace('_TL', '') for col in sum_per_date.columns]
+    
+    return sum_per_date
+
+# --- Kümülatif Hesaplama Fonksiyonu ---
 def calculate_cumulative(data):
     """Verilen veriye kümülatif toplam uygular."""
     return data.cumsum()
@@ -163,7 +189,7 @@ def create_cumulative_plot(data, title="Kümülatif Net Giriş"):
                 name=column
             )
         )
-
+    
     annotations = []
     for column in data.columns:
         val = data[column].iloc[-1] / 1_000_000_000  # Milyar olarak
@@ -183,13 +209,13 @@ def create_cumulative_plot(data, title="Kümülatif Net Giriş"):
 
     return go.Figure(data=traces, layout=layout)
 
-# --- Veriyi Hazırlama ve Grafik Çizimi ---
+# --- Veri Hazırlığı ve Grafik Oluşumu ---
 if main_df is not None:
-    # sum_per_date'yi `main_df`'den alıyoruz ve tarih bazında işlem yapıyoruz
-    sum_data = main_df.groupby('Tarih')[sum_per_date.columns].sum()  # 'sum_per_date' burada varlık sınıfı bazında toplam akımı tutuyor
-
+    # `main_df` üzerinde işlem yaparak sum_per_date oluşturuluyor
+    sum_per_date = calculate_sum_per_date(main_df)
+    
     # 12 Aylık Kümülatif Net Giriş Hesaplama
-    cumulative_data = calculate_cumulative(sum_data)
+    cumulative_data = calculate_cumulative(sum_per_date)
 
     # Grafik oluştur
     fig_ybb = create_cumulative_plot(cumulative_data, "12 Aylık Kümülatif Net Giriş")
@@ -199,6 +225,3 @@ if main_df is not None:
     st.plotly_chart(fig_ybb, use_container_width=True)
 else:
     st.warning("Veri bulunamadı. Lütfen pickle dosyasının doğru yolda olduğundan emin olun.")
-
-
-
