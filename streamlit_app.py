@@ -1,55 +1,34 @@
-import os  # os modülünü ekleyin
+import streamlit as st
+import pandas as pd
 import gdown
-import pandas as pd
-import streamlit as st
-from datetime import datetime, timedelta
 
-# --- Veriyi indir ---
+# Dosyaların ID'lerini ve URL'lerini ayarlıyoruz
+main_df_url = "https://drive.google.com/uc?id=1NhD3-QLAvgOjfzrgMuyf-9Oeu_gHEOiA"  # Main dataframe linki
+fund_info_url = "https://drive.google.com/uc?id=1e3OE8r7ZuYe5vvOKPR9_TjuMNyDdLx2r"  # Fund info linki
+
+# Dosyaları indiriyoruz
 @st.cache_data
-def load_data():
-    url_id = "1b6-R6zQXRcOW7OI9ZcWoIcZuAK6OlgT4"  # Google Drive dosyasının ID'si
-    url = f"https://drive.google.com/uc?id={url_id}"
-    output = "main_df.pkl"
+def download_files():
+    # Ana veri setini indir
+    main_df_output = 'main_df.pkl'
+    gdown.download(main_df_url, main_df_output, quiet=False)
 
-    if not os.path.exists(output):  # sadece ilk sefer indirir
-        gdown.download(url, output, quiet=False)
-    return pd.read_pickle(output)
+    # Fund info dosyasını indir
+    fund_info_output = 'fund_info.pkl'
+    gdown.download(fund_info_url, fund_info_output, quiet=False)
 
-main_df = load_data()
+    # Dosyaları pandas ile oku
+    main_df = pd.read_pickle(main_df_output)
+    fund_info = pd.read_pickle(fund_info_output)
 
-# --- Veri kontrolü ---
-st.write(main_df.head())  # Veriyi kontrol et
+    return main_df, fund_info
 
-import pandas as pd
-import streamlit as st
+# Dosyaları indir ve oku
+main_df, fund_info = download_files()
 
-# --- Haftalık Giriş Yapan Fonlar --- 
-def prepare_weekly_inflow(df, top_n=10):
-    # Son 5 gün verisini al
-    df_sorted = df.sort_values('Tarih', ascending=False)
-    last_5_days = df_sorted.head(5)
+# Veriyi kontrol et
+st.write("Main DataFrame:")
+st.write(main_df.head())
 
-    # Fon bazında toplam akımı hesapla
-    weekly_inflow = last_5_days.groupby('Fon Kodu')['Flow'].sum().div(1_000_000).round(1).reset_index()
-
-    # En yüksek 10 fonu seç
-    top_funds = weekly_inflow.sort_values('Flow', ascending=False).head(top_n)
-    return top_funds
-
-# --- Streamlit İçin Görselleştirme --- 
-st.title("Haftalık En Büyük Giriş Yapan Fonlar")
-
-# Veriyi işleyelim
-top_funds_weekly = prepare_weekly_inflow(main_df)
-
-# Eğer veriler varsa, tabloyu ve grafiği gösterelim
-if not top_funds_weekly.empty:
-    st.subheader("Haftalık En Büyük Giriş Yapan Fonlar")
-    st.write(top_funds_weekly)
-
-    # Burada grafiği eklemek isterseniz, örneğin Plotly kullanarak:
-    import plotly.express as px
-    fig = px.bar(top_funds_weekly, x='Fon Kodu', y='Flow', title="Haftalık En Büyük Giriş Yapan Fonlar")
-    st.plotly_chart(fig, use_container_width=True)
-else:
-    st.warning("Seçilen tarihlerde veri bulunamadı.")
+st.write("Fund Info DataFrame:")
+st.write(fund_info.head())
