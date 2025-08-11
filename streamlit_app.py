@@ -230,13 +230,6 @@ else:
 file_id = '1e3OE8r7ZuYe5vvOKPR9_TjuMNyDdLx2r'  # Google Drive dosyasının ID'si
 url = f"https://drive.google.com/uc?id={file_id}"
 
-# Dosyayı indir
-output = 'fund_infox.xlsx'
-gdown.download(url, output, quiet=False)
-
-# Excel dosyasını pandas ile oku
-fund_info = pd.read_excel(output)
-
 
 
 import pandas as pd
@@ -274,4 +267,18 @@ if not top_funds_weekly.empty:
 
 else:
     st.warning("Seçilen tarihlerde veri bulunamadı.")
+
+
+file_id = '1e3OE8r7ZuYe5vvOKPR9_TjuMNyDdLx2r'
+url = f'https://drive.google.com/uc?id={file_id}'
+
+# Dosyayı indir
+output = 'fund_infox.xlsx'
+gdown.download(url, output, quiet=False)
+
+# Excel dosyasını pandas ile oku
+fund_info = pd.read_excel(output)
+
+# Kontrol etmek için ilk birkaç satırı göster
+st.write(fund_info.head())
 
