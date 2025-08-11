@@ -101,17 +101,9 @@ else:
 # 📊 Kümülatif Net Giriş Grafik
 # --------------------------
 
-# Widget'lar için tarih aralığı ve PYŞ seçimi
-st.sidebar.header("Kümülatif Net Giriş Grafiği")
-
-# Tarih aralığını widget üzerinden seçelim
-unique_dates = sorted(main_df["Tarih"].dt.date.unique())
-start_date_slider = st.sidebar.select_slider("Başlangıç Tarihi", options=unique_dates, value=unique_dates[0])
-end_date_slider = st.sidebar.select_slider("Bitiş Tarihi", options=unique_dates, value=unique_dates[-1])
-
 # Veri filtreleme
-df_filtered = main_df[(main_df["Tarih"].dt.date >= start_date_slider) & 
-                      (main_df["Tarih"].dt.date <= end_date_slider) &
+df_filtered = main_df[(main_df["Tarih"].dt.date >= start_date) & 
+                      (main_df["Tarih"].dt.date <= end_date) &
                       (main_df["PYŞ"] == selected_pysh)]
 
 # Veriyi grupla ve işle
@@ -125,7 +117,7 @@ if not df_filtered.empty:
         daily,
         x=daily.index,
         y="Kümülatif Giriş",
-        title=f"{selected_pysh} Kümülatif Net Giriş - {start_date_slider} - {end_date_slider}",
+        title=f"{selected_pysh} Kümülatif Net Giriş - {start_date} - {end_date}",
         labels={"value": "Kümülatif Giriş (M TL)", "Tarih": "Tarih"}
     )
 
