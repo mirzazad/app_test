@@ -226,13 +226,10 @@ if main_df is not None:
 else:
     st.warning("Veri bulunamadı. Lütfen pickle dosyasının doğru yolda olduğundan emin olun.")
 
-
 import streamlit as st
 import pandas as pd
 
 # --- Veri Hazırlığı Fonksiyonları ---
-
-# Bu fonksiyonları Streamlit'e entegre edeceğiz
 def prepare_flow_table(df, fund_info, period_tail, period_name, ascending=False):
     df_sorted = df.sort_values(['Fon Kodu', 'Tarih'])
     recent = df_sorted.groupby('Fon Kodu').tail(period_tail)
@@ -245,7 +242,10 @@ def prepare_flow_table(df, fund_info, period_tail, period_name, ascending=False)
     aggregated[period_name] = aggregated['Flow'].apply(lambda x: f"{x:,.0f} M TL")
     return aggregated
 
-# Filtreleme fonksiyonları
+# Fon bilgilerini oluşturma
+fund_info = main_df[['Fon Kodu', 'Fon Adı']].drop_duplicates().reset_index(drop=True)
+
+# Filter Functions
 def filter_exclude_para(df):
     return df[~df['Fon Adı'].str.contains('Para', case=False, na=False)]
 
@@ -257,17 +257,17 @@ def filter_yogun_only(df):
 
 def filter_hisse_only(df):
     return df[
-        df['Fon Adı'].str.contains('Yoğun', case=False, na=False) &
+        df['Fon Adı'].str.contains('Yoğun', case=False, na=False) & 
         ~df['Fon Adı'].str.contains('Serbest|Özel|Algoritm', case=False, na=False)
     ]
 
-# Hesaplamaları Streamlit'te yapalım
-# Generate base tables
+# Tabloları oluşturma
 weekly_inflow = prepare_flow_table(main_df, fund_info, period_tail=5, period_name='Haftalık_Giriş')
 weekly_outflow = prepare_flow_table(main_df, fund_info, period_tail=5, period_name='Haftalık_Çıkış', ascending=True)
 monthly_inflow = prepare_flow_table(main_df, fund_info, period_tail=22, period_name='Aylık_Giriş')
 monthly_outflow = prepare_flow_table(main_df, fund_info, period_tail=22, period_name='Aylık_Çıkış', ascending=True)
 
+# Sonuç tablosunu oluşturma
 def generate_result_table(filter_func):
     wi = filter_func(weekly_inflow)[['Fon Adı', 'Haftalık_Giriş']].reset_index(drop=True)
     wo = filter_func(weekly_outflow)[['Fon Adı', 'Haftalık_Çıkış']].reset_index(drop=True)
@@ -276,9 +276,7 @@ def generate_result_table(filter_func):
     table = pd.concat([wi, wo, mi, mo], axis=1).dropna().head(10)
     return table
 
-# --- Streamlit Uygulaması ---
-
-# Sidebar için filtreleme
+# Streamlit UI - Filtre Seçimi
 st.sidebar.header("Filtreleme")
 filter_option = st.sidebar.radio("Filtre Seçiniz", ['Tüm Fonlar', 'Para Piyasası Fonları Hariç', 'Para Piyasası ve Serbest Fonlar Hariç', 'Yoğun Fonlar', 'Hisse Yoğun Fonlar'])
 
@@ -294,8 +292,9 @@ elif filter_option == 'Yoğun Fonlar':
 elif filter_option == 'Hisse Yoğun Fonlar':
     result = generate_result_table(filter_hisse_only)
 
-# Tabloları Streamlit'te göster
+# Tabloları Streamlit'te gösterme
 st.title(f"Fon Akımları - {filter_option} Filtreli")
 st.dataframe(result)
+
 
 
