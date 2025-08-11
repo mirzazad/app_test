@@ -1,5 +1,3 @@
-kodun tümü burada,
-
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -229,4 +227,3 @@ if main_df is not None:
 else:
     st.warning("Veri bulunamadı. Lütfen pickle dosyasının doğru yolda olduğundan emin olun.")
 
-nedir sorun
