@@ -5,6 +5,7 @@ import gdown
 import os
 from datetime import datetime, timedelta
 
+# --- Veriyi indir ---
 @st.cache_data
 def load_data():
     url_id = "1ZptN78nnE4i-YTDvcy0DiUtTQ5SWDJJ7"  # kendi dosya ID'ni buraya yaz
@@ -95,3 +96,41 @@ else:
     # --------------------------
     st.title("Fon Akımları Dashboard")
     st.plotly_chart(fig, use_container_width=True)
+
+# --------------------------
+# 📊 Kümülatif Net Giriş Grafik
+# --------------------------
+
+# Widget'lar için tarih aralığı ve PYŞ seçimi
+st.sidebar.header("Kümülatif Net Giriş Grafiği")
+
+# Tarih aralığını widget üzerinden seçelim
+unique_dates = sorted(main_df["Tarih"].dt.date.unique())
+start_date_slider = st.sidebar.select_slider("Başlangıç Tarihi", options=unique_dates, value=unique_dates[0])
+end_date_slider = st.sidebar.select_slider("Bitiş Tarihi", options=unique_dates, value=unique_dates[-1])
+
+# Veri filtreleme
+df_filtered = main_df[(main_df["Tarih"].dt.date >= start_date_slider) & 
+                      (main_df["Tarih"].dt.date <= end_date_slider) &
+                      (main_df["PYŞ"] == selected_pysh)]
+
+# Veriyi grupla ve işle
+if not df_filtered.empty:
+    daily = df_filtered.groupby("Tarih")[asset_columns].sum().div(1_000_000).round(2)
+    daily["Toplam"] = daily.sum(axis=1).round(2)
+    daily["Kümülatif Giriş"] = daily["Toplam"].cumsum()
+
+    # Grafik oluştur
+    fig2 = px.line(
+        daily,
+        x=daily.index,
+        y="Kümülatif Giriş",
+        title=f"{selected_pysh} Kümülatif Net Giriş - {start_date_slider} - {end_date_slider}",
+        labels={"value": "Kümülatif Giriş (M TL)", "Tarih": "Tarih"}
+    )
+
+    fig2.update_layout(template="plotly_white", height=500)
+    st.plotly_chart(fig2, use_container_width=True)
+
+else:
+    st.warning("Seçilen tarihlerde veri bulunamadı.")
