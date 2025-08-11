@@ -145,60 +145,60 @@ def calculate_cumulative(df, start_date):
 from datetime import datetime, timedelta
 
 
-
-# --- Akım Hesaplama Fonksiyonu ---
-def calculate_flow(df):
-    df['Flow'] = df['Yerli Hisse'] + df['TL Sabit Getirili'] + df['Döviz Sabit Getirili'] + \
-                 df['Kıymetli Madenler'] + df['Yabancı Hisse/BYF'] + df['TL Yatırım Fon/BYF'] + \
-                 df['Teminat'] + df['Diğer'] + df['Para Piyasası']
-    return df
-
-# Varlık sınıfı bazında akımları hesapla
-main_df = main_df.groupby('Fon Kodu', group_keys=False).apply(calculate_flow).reset_index(drop=True)
-
-# --- Akımları TL cinsinden hesaplama ---
-columns_to_calculate = ['Yerli Hisse', 'TL Sabit Getirili', 'Döviz Sabit Getirili', 'Kıymetli Madenler', 
-                        'Yabancı Hisse/BYF', 'TL Yatırım Fon/BYF', 'Teminat', 'Diğer', 'Para Piyasası']
-
-for col in columns_to_calculate:
-    main_df[col + '_TL'] = (main_df[col] / 100) * main_df['Flow']
-
-# Sadece *_TL kolonlarını tutalım
-tl_columns = [col + '_TL' for col in columns_to_calculate]
-
-# Tarih bazında sum per date hesapla
-sum_per_date = main_df.groupby('Tarih')[tl_columns].sum()
-sum_per_date.columns = [col.replace('_TL', '') for col in sum_per_date.columns]
-
-# sum_data (sonuç veri seti) hazırlıyoruz
-sum_data = sum_per_date.copy()
-
 # --- 12 Aylık Kümülatif Net Giriş Hesaplama Fonksiyonu ---
 def calculate_cumulative(data):
-    """12 aylık (252 iş günü) kümülatif net giriş hesaplama."""
-    return data.rolling(window=252).sum()  # 252 iş günü için kümülatif toplam
+    """Verilen veriye kümülatif toplam uygular."""
+    return data.cumsum()
 
-# 12 Aylık Kümülatif Net Giriş Hesaplama
-cumulative_data = calculate_cumulative(sum_data)
+# --- Kümülatif Grafik Çizim Fonksiyonu ---
+def create_cumulative_plot(data, title="Kümülatif Net Giriş"):
+    """Veriye kümülatif grafik çizer."""
+    traces = []
+    for column in data.columns:
+        traces.append(
+            go.Scatter(
+                x=data.index,
+                y=data[column],
+                mode='lines',
+                name=column
+            )
+        )
 
-# --- Grafik için Verileri Hazırlama ---
-fig = px.line(
-    cumulative_data,
-    x=cumulative_data.index,
-    y=cumulative_data.columns,
-    title="12 Aylık Kümülatif Net Giriş (Varlık Sınıfı Bazında)",
-    labels={"value": "Kümülatif Giriş (M TL)", "Tarih": "Tarih"}
-)
+    annotations = []
+    for column in data.columns:
+        val = data[column].iloc[-1] / 1_000_000_000  # Milyar olarak
+        annotations.append(dict(
+            x=data.index[-1], y=data[column].iloc[-1],
+            text=f'{val:.1f} Milyar',
+            showarrow=True, arrowhead=3
+        ))
 
-fig.update_layout(
-    template="plotly_white",
-    height=500,
-    title_font=dict(size=20, family="Segoe UI Semibold", color="black")
-)
+    layout = go.Layout(
+        title=title,
+        xaxis=dict(title='Tarih'),
+        yaxis=dict(title='TRY'),
+        hovermode='x unified',
+        template='plotly_dark'
+    )
 
-# --- Grafik Gösterimi ---
-st.plotly_chart(fig, use_container_width=True)
+    return go.Figure(data=traces, layout=layout)
 
+# --- Veriyi Hazırlama ve Grafik Çizimi ---
+if main_df is not None:
+    # sum_per_date'yi `main_df`'den alıyoruz ve tarih bazında işlem yapıyoruz
+    sum_data = main_df.groupby('Tarih')[sum_per_date.columns].sum()  # 'sum_per_date' burada varlık sınıfı bazında toplam akımı tutuyor
+
+    # 12 Aylık Kümülatif Net Giriş Hesaplama
+    cumulative_data = calculate_cumulative(sum_data)
+
+    # Grafik oluştur
+    fig_ybb = create_cumulative_plot(cumulative_data, "12 Aylık Kümülatif Net Giriş")
+
+    # --- Streamlit ile görselleştirme ---
+    st.title("Kümülatif 12 Aylık Net Giriş")
+    st.plotly_chart(fig_ybb, use_container_width=True)
+else:
+    st.warning("Veri bulunamadı. Lütfen pickle dosyasının doğru yolda olduğundan emin olun.")
 
 
 
